@@ -2,6 +2,8 @@
 
 All templates were run on Node 22+ with native type stripping (`node file.ts`). They avoid the syntax that strip-only mode rejects with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`: **parameter properties** (`constructor(private x)`), `enum` and `namespace`.
 
+**Not sure which pattern a problem needs?** Start with the [Pattern Map](04-pattern-map.md): brute force → repeated work → what to remember, constraint sizes, input and wording signals, invariants, and all 100 drills reasoned out. This page is the template reference.
+
 Each section gives **When** (the signal in the problem), the idea and a template, **Cost** (time / extra space), **Trap** (the usual bug) and **Drills** (problems from the live-coding set that use it).
 
 | Signal in the problem | Pattern |
@@ -9,24 +11,26 @@ Each section gives **When** (the signal in the problem), the idea and a template
 | "seen before?", pair with a target sum, counts, anagrams, grouping | hash map / set |
 | element that appears more than n/2 times, O(1) space | Boyer-Moore vote |
 | serialize a list of strings, run lengths, symbol lookahead | string scanning |
-| sorted array, pair/triple sums, palindrome, in-place filtering | two pointers |
+| sorted array, pair/triple sums, palindrome check or longest palindrome, in-place filtering, merge into free space at the back | two pointers |
 | contiguous subarray/substring with a constraint | sliding window |
 | range sums, subarray sum = k, "everything left/right of i" | prefix sums / prefix-suffix passes |
+| rotate / transpose a grid in place, spiral order | matrix index maps and boundaries |
 | matching brackets, postfix expressions, O(1) min | stack |
 | next greater/smaller, histogram, window maximum | monotonic stack / deque |
 | sorted or rotated input, "minimum X such that feasible" | binary search |
-| reverse, merge, middle, cycle, n-th from end in a list | linked-list pointers |
+| reverse, merge, middle, cycle, n-th from end in a list; n + 1 values in [1, n] with O(1) space | linked-list pointers (Floyd) |
 | overlapping intervals, rooms, removals | intervals (sort + sweep / greedy) |
-| tree depth, paths, levels, BST order | tree DFS / BFS |
+| tree depth, paths, levels, BST order, build from traversals, serialize | tree DFS / BFS |
 | top-k, k-th largest, merge k sorted, running median, scheduling | heap |
-| islands, shortest path unweighted / levels | BFS / DFS |
-| dependencies / ordering | topological sort |
+| islands, shortest path unweighted / levels, "which cells reach the border" | BFS / DFS (from the border) |
+| longest path where every step must increase (no cycles possible) | DFS + memo |
+| dependencies / ordering, letter order implied by sorted words | topological sort |
 | connectivity, grouping, cycle in undirected graph | union-find |
 | weighted shortest path (non-negative) | Dijkstra |
 | all combinations/permutations/subsets | backtracking |
 | "can you reach", local choice provably safe | greedy |
 | optimal substructure + overlapping subproblems | DP (see the [DP doc](02-dynamic-programming.md)) |
-| prefix lookups, wildcard word search | trie |
+| prefix lookups, wildcard word search, many words on one board | trie |
 | pairs cancel, count set bits | bit tricks |
 | fixed capacity, evict least recently used | LRU (Map order) |
 
@@ -66,7 +70,7 @@ const anagramKey = (w: string) => {
 - **Runs in a Set:** start counting only at an x where `x − 1` is absent, then extend upward. Runs are disjoint, so all inner steps together are ≤ n. Iterate the Set, not the array, so duplicates do no extra work.
 
 **Cost:** O(n) time, O(n) space. **Trap:** count keys without separators collide; iterate strings with `for...of` (code points) and use a Map, not a 26-array, for Unicode.
-Drills: [algo-001](../practice/live-coding/03-algorithms.md#algo-001), [algo-002](../practice/live-coding/03-algorithms.md#algo-002), [algo-003](../practice/live-coding/03-algorithms.md#algo-003), [algo-004](../practice/live-coding/03-algorithms.md#algo-004), [algo-007](../practice/live-coding/03-algorithms.md#algo-007), [algo-048](../practice/live-coding/03-algorithms.md#algo-048)
+Drills: [algo-001](../practice/live-coding/03-algorithms.md#algo-001), [algo-002](../practice/live-coding/03-algorithms.md#algo-002), [algo-003](../practice/live-coding/03-algorithms.md#algo-003), [algo-004](../practice/live-coding/03-algorithms.md#algo-004), [algo-007](../practice/live-coding/03-algorithms.md#algo-007)
 
 ## Boyer-Moore majority vote
 **When:** an element appears more than n/2 times and you need O(1) space.
@@ -114,12 +118,14 @@ function runs(s: string): [string, number][] {
 - **Vertical scan:** compare column i across all strings; stop at the first mismatch or at the end of the shortest string (longest common prefix). Handle an empty list.
 
 **Cost:** O(total length). **Trap:** decoding by `split('#')`; repeated `+=` in a loop where an array + `join` is expected.
-Drills: [algo-009](../practice/live-coding/03-algorithms.md#algo-009), [algo-045](../practice/live-coding/03-algorithms.md#algo-045), [algo-046](../practice/live-coding/03-algorithms.md#algo-046), [algo-049](../practice/live-coding/03-algorithms.md#algo-049)
+Drills: [algo-009](../practice/live-coding/03-algorithms.md#algo-009), [algo-045](../practice/live-coding/03-algorithms.md#algo-045), [algo-049](../practice/live-coding/03-algorithms.md#algo-049)
 
 ## Two pointers
-Three shapes, each O(n) because every step moves a pointer for good:
+Each pointer only moves one way, so one pass is O(n). The shapes:
 - **Opposite ends** (`l`, `r` move inward). Sorted pair sum: too small → `l++`, too big → `r--`. Container with most water: area is capped by the shorter line, so move the shorter one. Palindrome: compare `s[l]`, `s[r]` and move both.
 - **Same direction (read/write):** `read` scans everything; `write` marks the end of the kept prefix (move zeroes, remove duplicates, in-place compression).
+- **From the back:** when the free space is at the end of the output array (merge sorted array), write the larger of the two last values into the last slot. Merging from the front would overwrite values not read yet.
+- **Center outward:** longest palindromic substring. Brute force re-checks the same inner part inside every longer substring (O(n³)); expanding from each of the 2n − 1 centers (characters and gaps) reuses the match already confirmed: O(n²), O(1) space.
 - **Gap and fast/slow:** see Linked lists.
 ```ts
 function twoSumSorted(nums: number[], target: number): [number, number] | null {
@@ -152,6 +158,21 @@ function keepInPlace(nums: number[], keep: (x: number) => boolean): number {
     if (keep(nums[read])) { [nums[write], nums[read]] = [nums[read], nums[write]]; write++; } // rejected values drift to the back
   return write;                                              // keep x !== 0 on [0,1,0,3,12] → [1,3,12,0,0]
 }
+// From the back: a has m values then n free slots; w ≥ i, so it never overwrites an unread value
+function mergeInto(a: number[], m: number, b: number[], n: number): void {
+  let i = m - 1, j = n - 1;
+  for (let w = m + n - 1; j >= 0; w--) a[w] = i >= 0 && a[i] > b[j] ? a[i--] : b[j--]; // stop when b is used up
+}
+// Center outward: odd centers (i, i) and even centers (i, i + 1)
+function longestPalindrome(s: string): string {
+  let start = 0, len = 0;
+  const expand = (l: number, r: number) => {
+    while (l >= 0 && r < s.length && s[l] === s[r]) { l--; r++; }
+    if (r - l - 1 > len) { start = l + 1; len = r - l - 1; }    // the loop overshoots one step per side
+  };
+  for (let i = 0; i < s.length; i++) { expand(i, i); expand(i, i + 1); }
+  return s.slice(start, start + len);                            // 'cbbd' → 'bb'; counting palindromes: +1 per expansion step
+}
 // Trapping rain water: water over a bar = min(maxLeft, maxRight) − height.
 // Process the lower side: the other side surely has a wall at least that tall.
 function trap(h: number[]): number {
@@ -165,8 +186,8 @@ function trap(h: number[]): number {
 const isPalRange = (s: string, l: number, r: number) => { while (l < r) if (s[l++] !== s[r--]) return false; return true; };
 // "Palindrome after deleting at most one char": at the first mismatch, try BOTH isPalRange(l+1, r) and isPalRange(l, r-1)
 ```
-**Cost:** O(n) / O(1); 3Sum O(n²). **Trap:** default `sort()` compares strings; in 3Sum skip duplicates for `i` and for `l` after a hit; for "valid palindrome" skip non-alphanumerics before comparing (digits count) and lowercase both sides.
-Drills: [algo-010](../practice/live-coding/03-algorithms.md#algo-010), [algo-011](../practice/live-coding/03-algorithms.md#algo-011), [algo-012](../practice/live-coding/03-algorithms.md#algo-012), [algo-013](../practice/live-coding/03-algorithms.md#algo-013), [algo-014](../practice/live-coding/03-algorithms.md#algo-014), [algo-015](../practice/live-coding/03-algorithms.md#algo-015), [algo-047](../practice/live-coding/03-algorithms.md#algo-047)
+**Cost:** O(n) / O(1); 3Sum and center expansion O(n²). **Trap:** default `sort()` compares strings; in 3Sum skip duplicates for `i` and for `l` after a hit; for "valid palindrome" skip non-alphanumerics before comparing (digits count) and lowercase both sides; merging from the back, loop while `b` has values (`j >= 0`), not while `a` does; forgetting the even centers (`'abba'`).
+Drills: [algo-010](../practice/live-coding/03-algorithms.md#algo-010), [algo-011](../practice/live-coding/03-algorithms.md#algo-011), [algo-012](../practice/live-coding/03-algorithms.md#algo-012), [algo-013](../practice/live-coding/03-algorithms.md#algo-013), [algo-014](../practice/live-coding/03-algorithms.md#algo-014), [algo-015](../practice/live-coding/03-algorithms.md#algo-015), [algo-044](../practice/live-coding/03-algorithms.md#algo-044), [algo-047](../practice/live-coding/03-algorithms.md#algo-047), [algo-050](../practice/live-coding/03-algorithms.md#algo-050)
 
 ## Sliding window
 The window is `s[left..right]`. Move `right` forward every step; move `left` forward while the window is invalid (variable size) or by exactly one (fixed size k). Both pointers only move forward, so the nested `while` is still O(n) in total. Validity must be monotonic: shrinking a valid window keeps it valid. Sums with negative numbers break this; use prefix sums instead.
@@ -237,7 +258,7 @@ function findAnagrams(s: string, p: string): number[] {
 - **Fixed window sum/max:** add `x[i]`, subtract `x[i − k]`; for the window *maximum* use the monotonic deque below.
 
 **Cost:** O(n) time, O(alphabet) space. **Trap:** jumping `left` backwards (`'abba'`); recomputing counts per window (O(n·k)).
-Drills: [algo-016](../practice/live-coding/03-algorithms.md#algo-016), [algo-017](../practice/live-coding/03-algorithms.md#algo-017), [algo-018](../practice/live-coding/03-algorithms.md#algo-018), [algo-019](../practice/live-coding/03-algorithms.md#algo-019), [algo-020](../practice/live-coding/03-algorithms.md#algo-020), [algo-050](../practice/live-coding/03-algorithms.md#algo-050)
+Drills: [algo-016](../practice/live-coding/03-algorithms.md#algo-016), [algo-017](../practice/live-coding/03-algorithms.md#algo-017), [algo-018](../practice/live-coding/03-algorithms.md#algo-018), [algo-019](../practice/live-coding/03-algorithms.md#algo-019), [algo-020](../practice/live-coding/03-algorithms.md#algo-020)
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -275,7 +296,37 @@ function productExceptSelf(nums: number[]): number[] {
 ```
 The same left/right idea gives prefix-max and suffix-max arrays (rain water in O(n) space). On a tree, keep a map of prefix sums along the root path and remove the current sum when backtracking (path sum from any node downward). Point updates plus range queries need a Fenwick or segment tree (O(log n) each).
 **Cost:** O(n) build. **Trap:** forgetting the `{0: 1}` seed; a sliding window instead (fails with negatives); dividing the total product (breaks on zeros).
-Drills: [algo-006](../practice/live-coding/03-algorithms.md#algo-006), [algo-043](../practice/live-coding/03-algorithms.md#algo-043), [algo-044](../practice/live-coding/03-algorithms.md#algo-044)
+Drills: [algo-006](../practice/live-coding/03-algorithms.md#algo-006), [algo-043](../practice/live-coding/03-algorithms.md#algo-043)
+
+## Matrix: index maps and boundaries
+**When:** rotate, transpose or flip a grid in place; read it in spiral order; mark rows and columns with O(1) extra space. The brute force builds a second grid (O(m·n) space) or keeps a visited grid; the in-place versions remember only a few indices.
+- **Write the index map first.** Clockwise rotation sends `(r, c)` to `(c, n − 1 − r)`. Split it into moves that are plain swaps: transpose `(r, c) ↔ (c, r)`, then reverse each row. Counter-clockwise: transpose, then reverse the row order.
+- **Spiral:** the unvisited cells are always a rectangle, so keep four boundaries; each finished side moves one boundary inward.
+- **Set matrix zeroes in O(1) space:** use row 0 and column 0 as the marker arrays, plus two flags for whether row 0 and column 0 themselves held a zero; zero the inner cells first, the first row and column last.
+- **Sudoku-style checks:** one Set per row, column and box; the box index is `Math.floor(r / 3) * 3 + Math.floor(c / 3)`.
+- A sorted matrix searched by a virtual index is in Binary search.
+```ts
+function rotate(m: number[][]): void {                         // 90° clockwise, in place
+  for (let i = 0; i < m.length; i++)
+    for (let j = i + 1; j < m.length; j++) [m[i][j], m[j][i]] = [m[j][i], m[i][j]]; // transpose (j > i: swap once)
+  for (const row of m) row.reverse();                          // mirror left-right
+}
+function spiralOrder(m: number[][]): number[] {
+  const res: number[] = [];
+  let top = 0, bottom = m.length - 1, left = 0, right = (m[0]?.length ?? 0) - 1;
+  while (top <= bottom && left <= right) {
+    for (let c = left; c <= right; c++) res.push(m[top][c]);
+    top++;
+    for (let r = top; r <= bottom; r++) res.push(m[r][right]);
+    right--;
+    if (top <= bottom) { for (let c = right; c >= left; c--) res.push(m[bottom][c]); bottom--; } // a single row left?
+    if (left <= right) { for (let r = bottom; r >= top; r--) res.push(m[r][left]); left++; }     // a single column left?
+  }
+  return res;                                                  // [[1,2,3],[4,5,6],[7,8,9]] → [1,2,3,6,9,8,7,4,5]
+}
+```
+**Cost:** O(m·n) time, O(1) extra space. **Trap:** transposing over all `j` swaps every pair twice and undoes itself; in a spiral, walking a single leftover row or column a second time; in set-zeroes, overwriting the markers in row 0 / column 0 before reading them.
+Drills: [algo-046](../practice/live-coding/03-algorithms.md#algo-046), [algo-048](../practice/live-coding/03-algorithms.md#algo-048)
 
 ## Stack
 **When:** nesting and matching ("the most recent unmatched thing"), postfix evaluation, undo.
@@ -310,7 +361,7 @@ class MinStack {
 }
 ```
 **Cost:** O(n) / O(n). **Trap:** a single "current min" variable breaks after popping the min; RPN division must truncate toward zero (`-7/2 → -3`), not floor. One bracket type needs only a counter. Infix expressions: convert to RPN with shunting-yard (operator stack with precedence).
-Drills: [algo-022](../practice/live-coding/03-algorithms.md#algo-022), [algo-023](../practice/live-coding/03-algorithms.md#algo-023), [algo-024](../practice/live-coding/03-algorithms.md#algo-024)
+Drills: [algo-022](../practice/live-coding/03-algorithms.md#algo-022), [algo-023](../practice/live-coding/03-algorithms.md#algo-023)
 
 ## Monotonic stack and deque
 A monotonic stack holds indices whose values stay sorted. A new element pops every element it "beats", and the pop is the moment that element's answer becomes known. Each index is pushed and popped once, so O(n). Store indices, not values: you need distances and window expiry.
@@ -427,7 +478,8 @@ Drills: [algo-027](../practice/live-coding/03-algorithms.md#algo-027), [algo-028
 Pointer rewiring in O(1) space. Draw the three nodes `prev → curr → next` before writing code.
 - **Dummy head:** a fake node before the head removes the "is it the head?" special case (merge, remove, insert).
 - **Reverse:** save `next`, point `curr.next` back to `prev`, advance.
-- **Fast/slow:** fast moves 2, slow moves 1. When fast ends, slow is at the middle. If they meet, there is a cycle (Floyd); then restart one pointer at head and step both by 1: they meet at the cycle start.
+- **Fast/slow:** fast moves 2, slow moves 1. When fast ends, slow is at the middle. If they meet, there is a cycle (Floyd); then restart one pointer at head and step both by 1: they meet at the cycle start (head-to-start distance = meeting-point-to-start distance, modulo the cycle length).
+- **Floyd on an array:** n + 1 values in `[1, n]` with a repeat, no extra space, array read-only (find the duplicate). Read `i → nums[i]` as a `next` pointer. Index 0 is never pointed at, so it is a head outside the cycle, and the repeated value has two incoming pointers, so it is the cycle start. A Set would remember every value (O(n) space); Floyd remembers two indices.
 - **Gap:** move `fast` n + 1 steps ahead of `slow` (from the dummy); when fast is null, `slow.next` is the n-th node from the end.
 - **Composite (reorder, palindrome check):** middle → reverse second half → merge or compare. Cut the first half (`slow.next = null`) or you create a cycle.
 - **Digit lists:** add digit by digit with a carry; loop while either list *or the carry* remains. Never convert to a number (precision past 2^53).
@@ -457,6 +509,12 @@ function hasCycle(head: ListNode | null): boolean {
   while (fast && fast.next) { slow = slow!.next; fast = fast.next.next; if (slow === fast) return true; } // compare identity, not val
   return false;
 }
+function findDuplicate(nums: number[]): number {               // Floyd on i → nums[i]
+  let slow = 0, fast = 0;
+  do { slow = nums[slow]; fast = nums[nums[fast]]; } while (slow !== fast); // both start at 0: do-while
+  for (slow = 0; slow !== fast; ) { slow = nums[slow]; fast = nums[fast]; }  // meet at the cycle start
+  return slow;                                                 // [3,1,3,4,2] → 3
+}
 function removeNthFromEnd(head: ListNode | null, n: number): ListNode | null {
   const dummy: ListNode = { val: 0, next: head };
   let fast: ListNode | null = dummy, slow: ListNode = dummy;
@@ -475,7 +533,7 @@ function reorderList(head: ListNode | null): void {          // L0 → Ln → L1
 }
 ```
 **Cost:** O(n) / O(1) (recursive reverse uses O(n) stack). **Trap:** losing the rest of the list by not saving `next`; not handling removal of the head (use the dummy). k sorted lists: see Heap.
-Drills: [algo-033](../practice/live-coding/03-algorithms.md#algo-033), [algo-034](../practice/live-coding/03-algorithms.md#algo-034), [algo-035](../practice/live-coding/03-algorithms.md#algo-035), [algo-036](../practice/live-coding/03-algorithms.md#algo-036), [algo-037](../practice/live-coding/03-algorithms.md#algo-037), [algo-038](../practice/live-coding/03-algorithms.md#algo-038)
+Drills: [algo-024](../practice/live-coding/03-algorithms.md#algo-024), [algo-033](../practice/live-coding/03-algorithms.md#algo-033), [algo-034](../practice/live-coding/03-algorithms.md#algo-034), [algo-035](../practice/live-coding/03-algorithms.md#algo-035), [algo-036](../practice/live-coding/03-algorithms.md#algo-036), [algo-037](../practice/live-coding/03-algorithms.md#algo-037), [algo-038](../practice/live-coding/03-algorithms.md#algo-038)
 
 ## Intervals
 **When:** overlaps, merging, scheduling, minimum resources or removals. Sort first, then one pass.
@@ -526,9 +584,11 @@ Drills: [algo-039](../practice/live-coding/03-algorithms.md#algo-039), [algo-040
 type TreeNode = { val: number; left: TreeNode | null; right: TreeNode | null };
 ```
 - **DFS (recursion):** compute a node's answer from its children's answers (post-order): depth = 1 + max(children); same tree = values equal and both child pairs equal (walk both trees in lockstep); invert = swap children; subtree = "same tree" tried at every node (O(m·n)). Pass state *down* as a parameter (remaining target, allowed range) and check path conditions only at leaves.
-- **Return one thing, record another:** the DFS returns height, and a global records the best path that bends at the node (`leftH + rightH`). The diameter need not pass through the root. Max path sum uses the same shape with gains clamped at 0.
-- **BFS by level:** take a snapshot of the queue length (or build a next-level array) so each level is grouped.
+- **Return one thing, record another:** every path has one highest node where it bends. Trying all pairs of end nodes recomputes the same downward sums (O(n²)); instead the DFS returns what the parent can extend (height, or the best one-sided gain) and a global records the path that bends at the node (`leftH + rightH`, or `val + leftGain + rightGain`). The diameter need not pass through the root. Max path sum clamps gains at 0 (drop a negative branch) and starts `best` at −Infinity.
+- **BFS by level:** take a snapshot of the queue length (or build a next-level array) so each level is grouped. Right side view = the last value of each level.
 - **BST:** every node lies in an open range `(low, high)` inherited from its ancestors; in-order traversal is sorted; to find where two values split, walk down: both smaller → left, both larger → right, otherwise here.
+- **Build from preorder + inorder:** the next preorder value is the root; its inorder index splits left from right. `indexOf` + `slice` per node re-scans and copies (O(n²)); a value → index Map plus index ranges and one shared preorder cursor is O(n). Build left before right.
+- **Serialize:** preorder with a marker for every null child. One traversal without markers is ambiguous (`[1,2]` and `[1,null,2]` both give `1,2`); with markers each token says where a subtree ends, so the decoder reads tokens once with a shared cursor.
 ```ts
 const maxDepth = (n: TreeNode | null): number => n ? 1 + Math.max(maxDepth(n.left), maxDepth(n.right)) : 0;
 function levelOrder(root: TreeNode | null): number[][] {
@@ -551,6 +611,45 @@ function diameter(root: TreeNode | null): number {           // in edges
   };
   height(root);
   return best;
+}
+function maxPathSum(root: TreeNode | null): number {
+  let best = -Infinity;                                        // not 0: all-negative trees
+  const gain = (n: TreeNode | null): number => {
+    if (!n) return 0;
+    const l = Math.max(0, gain(n.left)), r = Math.max(0, gain(n.right));
+    best = Math.max(best, n.val + l + r);                      // path bending here
+    return n.val + Math.max(l, r);                             // the parent extends one side only
+  };
+  gain(root);
+  return best;                                                 // [-10,9,20,null,null,15,7] → 42
+}
+function buildTree(pre: number[], ino: number[]): TreeNode | null {
+  const pos = new Map(ino.map((v, i) => [v, i] as [number, number]));
+  let next = 0;                                                // next preorder value = next subtree root
+  const build = (lo: number, hi: number): TreeNode | null => { // subtree holding ino[lo..hi]
+    if (lo > hi) return null;
+    const val = pre[next++], mid = pos.get(val)!;
+    const left = build(lo, mid - 1);                           // left BEFORE right: preorder order
+    return { val, left, right: build(mid + 1, hi) };
+  };
+  return build(0, ino.length - 1);
+}
+function serialize(root: TreeNode | null): string {            // [1,2,3,null,null,4,5] → '1,2,#,#,3,4,#,#,5,#,#'
+  const out: string[] = [];
+  const walk = (n: TreeNode | null) => { if (!n) { out.push('#'); return; } out.push(String(n.val)); walk(n.left); walk(n.right); };
+  walk(root);
+  return out.join(',');                                        // the separator keeps '-12' one token
+}
+function deserialize(data: string): TreeNode | null {
+  const t = data.split(','); let i = 0;                        // shared cursor
+  const build = (): TreeNode | null => {
+    const tok = t[i++];
+    if (tok === '#') return null;
+    const n: TreeNode = { val: Number(tok), left: null, right: null };
+    n.left = build(); n.right = build();
+    return n;
+  };
+  return build();
 }
 function isValidBST(n: TreeNode | null, low = -Infinity, high = Infinity): boolean {
   if (!n) return true;
@@ -576,8 +675,8 @@ function lcaBST(root: TreeNode, p: number, q: number): TreeNode {
 }
 ```
 Plain binary tree LCA: return the node if it is p or q; if both recursive calls return non-null, the current node is the LCA, otherwise pass up the non-null side.
-**Cost:** O(n) time, O(h) stack (h = height: log n balanced, n skewed); BST walks O(h). **Trap:** checking only a node's direct children for BST validity; a node with one child is not a leaf; an empty tree; recursion past ~10k levels overflows the stack, so switch to an explicit stack or BFS.
-Drills: [algo-051](../practice/live-coding/03-algorithms.md#algo-051), [algo-052](../practice/live-coding/03-algorithms.md#algo-052), [algo-053](../practice/live-coding/03-algorithms.md#algo-053), [algo-054](../practice/live-coding/03-algorithms.md#algo-054), [algo-055](../practice/live-coding/03-algorithms.md#algo-055), [algo-056](../practice/live-coding/03-algorithms.md#algo-056), [algo-057](../practice/live-coding/03-algorithms.md#algo-057), [algo-058](../practice/live-coding/03-algorithms.md#algo-058), [algo-059](../practice/live-coding/03-algorithms.md#algo-059), [algo-060](../practice/live-coding/03-algorithms.md#algo-060)
+**Cost:** O(n) time, O(h) stack (h = height: log n balanced, n skewed); BST walks O(h). **Trap:** checking only a node's direct children for BST validity; a node with one child is not a leaf; an empty tree; returning a bent path to the parent (a path cannot fork); building the right subtree first with a shared preorder cursor; serializing without null markers or without a separator; recursion past ~10k levels overflows the stack, so switch to an explicit stack or BFS.
+Drills: [algo-051](../practice/live-coding/03-algorithms.md#algo-051), [algo-052](../practice/live-coding/03-algorithms.md#algo-052), [algo-053](../practice/live-coding/03-algorithms.md#algo-053), [algo-054](../practice/live-coding/03-algorithms.md#algo-054), [algo-055](../practice/live-coding/03-algorithms.md#algo-055), [algo-056](../practice/live-coding/03-algorithms.md#algo-056), [algo-057](../practice/live-coding/03-algorithms.md#algo-057), [algo-058](../practice/live-coding/03-algorithms.md#algo-058), [algo-059](../practice/live-coding/03-algorithms.md#algo-059), [algo-060](../practice/live-coding/03-algorithms.md#algo-060), [algo-083](../practice/live-coding/03-algorithms.md#algo-083), [algo-094](../practice/live-coding/03-algorithms.md#algo-094), [algo-095](../practice/live-coding/03-algorithms.md#algo-095)
 
 ## Heap (JS has none, so memorize this)
 A binary heap keeps the smallest element (by `cmp`) at the root: push and pop are O(log n), peek is O(1). For a max-heap, flip the comparator.
@@ -675,6 +774,8 @@ Drills: [algo-005](../practice/live-coding/03-algorithms.md#algo-005), [algo-061
 BFS visits nodes in order of distance, so the first time it reaches a node is a shortest path in an *unweighted* graph. Use an index pointer as the queue, since `shift()` is O(n). Mark a node visited **when you push it**, not when you pop it, or the same node is queued many times.
 - **Grid flood fill:** each unvisited land cell starts a component; BFS/DFS marks all connected land. For the area, count cells during the fill.
 - **Multi-source BFS:** seed the queue with *every* source at distance 0 (all rotten oranges, all gates), then expand level by level; each level is one time step.
+- **Search from the border (reverse the question):** "which cells can reach the edge?" Searching from every cell re-walks the same paths (O((R·C)²)); search once from all edge cells inward instead. Pacific Atlantic: from each ocean's border climb to neighbours that are at least as high (the flow reversed), then return the cells both searches marked. Surrounded regions: mark the 'O's connected to the border as safe, flip the rest.
+- **Longest path with strictly increasing steps (DFS + memo):** increasing moves cannot loop, so the graph is a DAG and the best path from a cell never depends on how you arrived. Plain DFS recomputes it for every path that walks in (exponential); memoize it, and no visited set is needed. This is DP on a DAG.
 - **Implicit graph:** generate neighbours on the fly (word ladder: change each position to each letter, look it up in a Set; delete from the Set when enqueued). Bidirectional BFS (grow the smaller frontier) cuts the search space.
 - **Clone / deep copy:** map original → copy; put the copy in the map *before* visiting neighbours, so cycles reuse it instead of recursing forever (same for lists with random pointers).
 ```ts
@@ -708,6 +809,40 @@ function orangesRotting(grid: number[][]): number {
   }
   return fresh === 0 ? minutes : -1;                         // [[2,1,1],[1,1,0],[0,1,1]] → 4
 }
+// From the border: cells that can drain into BOTH oceans (Pacific = top/left, Atlantic = bottom/right)
+function pacificAtlantic(h: number[][]): number[][] {
+  const R = h.length, C = h[0]?.length ?? 0;
+  const reach = (starts: [number, number][]) => {             // every cell that drains into this ocean
+    const seen = h.map(row => row.map(() => false)), st: [number, number][] = [];
+    for (const [r, c] of starts) if (!seen[r][c]) { seen[r][c] = true; st.push([r, c]); }
+    while (st.length) {
+      const [r, c] = st.pop()!;
+      for (const [nr, nc] of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]])
+        if (nr >= 0 && nc >= 0 && nr < R && nc < C && !seen[nr][nc] && h[nr][nc] >= h[r][c]) { seen[nr][nc] = true; st.push([nr, nc]); } // climb
+    }
+    return seen;
+  };
+  const pac: [number, number][] = [], atl: [number, number][] = [];
+  for (let r = 0; r < R; r++) { pac.push([r, 0]); atl.push([r, C - 1]); }
+  for (let c = 0; c < C; c++) { pac.push([0, c]); atl.push([R - 1, c]); }
+  const p = reach(pac), a = reach(atl), res: number[][] = [];
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) if (p[r][c] && a[r][c]) res.push([r, c]);
+  return res;
+}
+// DFS + memo on a DAG: longest strictly increasing path in a grid
+function longestIncreasingPath(m: number[][]): number {
+  const R = m.length, C = m[0]?.length ?? 0, memo = m.map(row => row.map(() => 0)); // 0 = not computed
+  const dfs = (r: number, c: number): number => {
+    if (memo[r][c]) return memo[r][c];
+    let best = 1;
+    for (const [nr, nc] of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]])
+      if (nr >= 0 && nc >= 0 && nr < R && nc < C && m[nr][nc] > m[r][c]) best = Math.max(best, 1 + dfs(nr, nc));
+    return memo[r][c] = best;
+  };
+  let ans = 0;
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) ans = Math.max(ans, dfs(r, c));
+  return ans;                                                // [[9,9,4],[6,6,8],[2,1,1]] → 4
+}
 // BFS on an implicit graph: the answer counts words, so start at 1
 function ladderLength(begin: string, end: string, words: string[]): number {
   const dict = new Set(words);
@@ -740,8 +875,8 @@ function cloneGraph(node: GraphNode | null): GraphNode | null {
   return node && dfs(node);
 }
 ```
-**Cost:** O(V + E) (grid: O(R·C)); word ladder O(N·L²·26). **Trap:** marking on pop; for multi-source BFS, starting a separate BFS per source (O((R·C)²)); counting an extra minute after the last level; using BFS on a weighted graph (use Dijkstra).
-Drills: [algo-066](../practice/live-coding/03-algorithms.md#algo-066), [algo-067](../practice/live-coding/03-algorithms.md#algo-067), [algo-068](../practice/live-coding/03-algorithms.md#algo-068), [algo-071](../practice/live-coding/03-algorithms.md#algo-071), [algo-074](../practice/live-coding/03-algorithms.md#algo-074)
+**Cost:** O(V + E) (grid: O(R·C), also for the border search and the memoized DFS); word ladder O(N·L²·26). **Trap:** marking on pop; for multi-source BFS, starting a separate BFS per source (O((R·C)²)); counting an extra minute after the last level; using BFS on a weighted graph (use Dijkstra); when the flow is reversed, the height comparison flips (`>=`), and equal heights do flow; in the memoized DFS, `>=` instead of `>` allows equal neighbours and creates cycles.
+Drills: [algo-066](../practice/live-coding/03-algorithms.md#algo-066), [algo-067](../practice/live-coding/03-algorithms.md#algo-067), [algo-068](../practice/live-coding/03-algorithms.md#algo-068), [algo-071](../practice/live-coding/03-algorithms.md#algo-071), [algo-074](../practice/live-coding/03-algorithms.md#algo-074), [algo-080](../practice/live-coding/03-algorithms.md#algo-080)
 
 ## Topological sort (Kahn) + cycle detection
 **When:** tasks with prerequisites; "can all be finished?" = "is the directed graph acyclic?". Repeatedly remove nodes with in-degree 0 (no unmet prerequisites); nodes on a cycle never reach 0.
@@ -760,9 +895,24 @@ function topoSort(n: number, edges: [number, number][]): number[] | null {
   return order.length === n ? order : null;                  // null → cycle
 }
 ```
-DFS alternative: three colours (0 unvisited, 1 on the current path, 2 done); reaching a colour-1 node is a cycle; the reversed post-order is a valid order. Minimum number of rounds (semesters) = number of BFS layers in Kahn.
-**Cost:** O(V + E). **Trap:** edge direction must be prerequisite → course (`[course, pre]` input gives the edge `pre → course`), otherwise the order comes out reversed.
-Drills: [algo-069](../practice/live-coding/03-algorithms.md#algo-069), [algo-070](../practice/live-coding/03-algorithms.md#algo-070)
+DFS alternative: three colours (0 unvisited, 1 on the current path, 2 done); reaching a colour-1 node is a cycle; the reversed post-order is a valid order. Minimum number of rounds (semesters) = number of BFS layers in Kahn. The order is unique only if the queue never holds two nodes at once.
+
+**Order hidden in sorted words (alien dictionary):** the edges are not given, you derive them. Trying every letter permutation is O(k!); instead compare each pair of *neighbouring* words: their first differing letters give one edge, later letters say nothing, and non-neighbouring pairs follow by transitivity. Then run Kahn over all letters that appear.
+```ts
+function alienEdges(words: string[]): [string, string][] | null {
+  const edges: [string, string][] = [];
+  for (let i = 0; i + 1 < words.length; i++) {
+    const a = words[i], b = words[i + 1];
+    let j = 0;
+    while (j < a.length && j < b.length && a[j] === b[j]) j++;
+    if (j < a.length && j < b.length) edges.push([a[j], b[j]]); // the first difference is the only information
+    else if (a.length > b.length) return null;                   // 'abc' before its prefix 'ab': invalid
+  }
+  return edges;                                                  // ['wrt','wrf','er','ett','rftt'] → t→f, w→e, r→t, e→r
+}
+```
+**Cost:** O(V + E); alien dictionary adds O(total characters) to compare neighbours. **Trap:** edge direction must be prerequisite → course (`[course, pre]` input gives the edge `pre → course`), otherwise the order comes out reversed; a repeated edge counted twice in the in-degree; leaving out letters that appear in no edge; missing the "word before its own prefix" case.
+Drills: [algo-069](../practice/live-coding/03-algorithms.md#algo-069), [algo-070](../practice/live-coding/03-algorithms.md#algo-070), [algo-099](../practice/live-coding/03-algorithms.md#algo-099)
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -880,10 +1030,10 @@ function exist(board: string[][], word: string): boolean {
 ```
 - **One level per input position:** phone-letter combinations recurse over digits and branch over each digit's letters; the empty input returns `[]`, not `['']`.
 - **Duplicates in the input:** sort, then skip `nums[i]` when `i > start && nums[i] === nums[i - 1]` (same value twice at one depth). For permutations: skip when `nums[i] === nums[i − 1]` and `nums[i − 1]` is not used.
-- **Many words on one board:** put them in a trie and walk it alongside the DFS.
+- **Many words on one board:** running the word search once per word re-walks the same board paths for every shared prefix. Put the words in a trie and walk it alongside one DFS per cell (template in Trie).
 
 **Cost:** subsets O(n·2ⁿ), permutations O(n·n!), grid word search O(R·C·3^L). **Trap:** pushing `cur` instead of a copy; forgetting to undo (`used[i]`, the board cell); recursing with 0 instead of `i` in combinations (produces permutations of one combination).
-Drills: [algo-075](../practice/live-coding/03-algorithms.md#algo-075), [algo-076](../practice/live-coding/03-algorithms.md#algo-076), [algo-077](../practice/live-coding/03-algorithms.md#algo-077), [algo-078](../practice/live-coding/03-algorithms.md#algo-078), [algo-079](../practice/live-coding/03-algorithms.md#algo-079), [algo-080](../practice/live-coding/03-algorithms.md#algo-080)
+Drills: [algo-075](../practice/live-coding/03-algorithms.md#algo-075), [algo-076](../practice/live-coding/03-algorithms.md#algo-076), [algo-077](../practice/live-coding/03-algorithms.md#algo-077), [algo-078](../practice/live-coding/03-algorithms.md#algo-078), [algo-079](../practice/live-coding/03-algorithms.md#algo-079), [algo-097](../practice/live-coding/03-algorithms.md#algo-097)
 
 ## Greedy
 **When:** a locally best choice can be proven never worse than any alternative (exchange argument: swapping it into an optimal answer does not make that answer worse). If you cannot argue it, look for a counterexample and fall back to DP (coins `[1,3,4]`, amount 6: greedy takes 4+1+1, the optimum is 3+3).
@@ -911,7 +1061,7 @@ const maxProfitUnlimited = (p: number[]) => p.reduce((s, x, i) => s + (i && x > 
 ```
 Other greedy choices in this sheet: earliest end first (Intervals), most frequent task first (Heap). Minimum jumps: BFS by ranges: when `i` reaches the current range end, jumps++ and the end becomes the farthest reach.
 **Cost:** O(n) / O(1) (plus a sort if needed). **Trap:** skipping the `total >= 0` check in the circuit; a transaction fee or cooldown breaks the "sum of rises" greedy (use the state-machine DP).
-Drills: [algo-041](../practice/live-coding/03-algorithms.md#algo-041), [algo-065](../practice/live-coding/03-algorithms.md#algo-065), [algo-093](../practice/live-coding/03-algorithms.md#algo-093), [algo-094](../practice/live-coding/03-algorithms.md#algo-094), [algo-095](../practice/live-coding/03-algorithms.md#algo-095)
+Drills: [algo-041](../practice/live-coding/03-algorithms.md#algo-041), [algo-065](../practice/live-coding/03-algorithms.md#algo-065), [algo-093](../practice/live-coding/03-algorithms.md#algo-093) (the unlimited-trades greedy is the follow-up of [algo-016](../practice/live-coding/03-algorithms.md#algo-016))
 
 ## Dynamic programming
 See the [DP doc](02-dynamic-programming.md): method, 1D, knapsack, LIS, two-string and grid DP, each with its drills.
@@ -974,8 +1124,26 @@ function matchPattern(n: TrieNode, p: string, i = 0): boolean {
   return false;                                              // matchPattern(trie.root, 'b.d')
 }
 ```
+```ts
+// Many words on a board (word search II): one DFS per cell walks the trie alongside the board
+function findWords(board: string[][], words: string[]): string[] {
+  const trie = new Trie(), found: string[] = [];
+  for (const w of words) trie.insert(w);
+  const dfs = (r: number, c: number, parent: TrieNode, path: string) => {
+    const ch = board[r]?.[c], n = ch === undefined ? undefined : parent.children.get(ch);
+    if (!n) return;                                            // off board, used cell ('#') or not a prefix
+    if (n.end) { found.push(path + ch); n.end = false; }       // report each word once
+    board[r][c] = '#';
+    for (const [nr, nc] of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]]) dfs(nr, nc, n, path + ch);
+    board[r][c] = ch!;
+    if (n.children.size === 0 && !n.end) parent.children.delete(ch!); // prune a finished branch
+  };
+  for (let r = 0; r < board.length; r++) for (let c = 0; c < board[r].length; c++) dfs(r, c, trie.root, '');
+  return found;                                                // oath/pea/eat/rain board → ['oath', 'eat']
+}
+```
 Autocomplete: walk to the prefix node, then DFS below it (or store the top-k completions at each node).
-**Cost:** O(L) per insert/lookup; wildcard search up to O(26^dots · L); space O(total characters). **Trap:** `search('app')` must be false until "app" itself is inserted.
+**Cost:** O(L) per insert/lookup; wildcard search up to O(26^dots · L); word search II O(R·C·4·3^(L−1)) worst case, far less after pruning; space O(total characters). **Trap:** `search('app')` must be false until "app" itself is inserted; on the board, reporting a word twice (clear `end` when found) and forgetting to restore the cell.
 Drills: [algo-096](../practice/live-coding/03-algorithms.md#algo-096), [algo-097](../practice/live-coding/03-algorithms.md#algo-097)
 
 <!-- theory-links:start -->
@@ -998,7 +1166,7 @@ function countBits(n: number): number[] {
 }
 ```
 **Cost:** O(n) / O(1). **Trap:** JS bitwise operators work on 32-bit *signed* integers: values ≥ 2³¹ turn negative (`x >>> 0` gives the unsigned value), and `popcount` loops forever on non-integers.
-Drills: [algo-098](../practice/live-coding/03-algorithms.md#algo-098), [algo-099](../practice/live-coding/03-algorithms.md#algo-099)
+Drills: [algo-098](../practice/live-coding/03-algorithms.md#algo-098)
 
 ---
 

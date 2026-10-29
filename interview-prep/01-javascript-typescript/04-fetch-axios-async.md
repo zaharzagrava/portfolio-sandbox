@@ -118,7 +118,7 @@ const allSettled = (values) => Promise.all([...values].map((item) => Promise.res
   (value) => ({ status: 'fulfilled', value }),
   (reason) => ({ status: 'rejected', reason }))));
 ```
-Traps: storing results in completion order instead of by index; forgetting the empty-input case. Drills: [node-07](../practice/live-coding/02-nodejs.md#node-07), [node-08](../practice/live-coding/02-nodejs.md#node-08), [node-09](../practice/live-coding/02-nodejs.md#node-09), [node-10](../practice/live-coding/02-nodejs.md#node-10).
+Traps: storing results in completion order instead of by index; forgetting the empty-input case. Drills: [node-07](../practice/live-coding/02-nodejs.md#node-07), [node-08](../practice/live-coding/02-nodejs.md#node-08), [node-10](../practice/live-coding/02-nodejs.md#node-10); the `Promise` class itself ([how it works](01-javascript-internals.md#8-promises-in-depth)): [node-09](../practice/live-coding/02-nodejs.md#node-09).
 
 ---
 
@@ -158,7 +158,7 @@ A promise can't be cancelled. Cancellation is a separate signal: `AbortControlle
 - `AbortSignal.timeout(ms)` aborts with a `TimeoutError` (its timer does not keep the process alive). `AbortSignal.any([a, b])` aborts when either does, e.g. caller's signal + deadline.
 - Check the signal **between** steps (`throwIfAborted()`) and also **pass it down** so the current step stops. Checking only between steps lets one slow step run on.
 - Always remove the `'abort'` listener when the work finishes. A long-lived signal (one per request) otherwise collects listeners: a leak plus `MaxListenersExceededWarning`.
-- Cancel work when an HTTP client disconnects: one controller per request, `res.on('close', () => { if (!res.writableFinished) ac.abort(); })`.
+- **Per-request deadline and disconnect** (server side): one controller per request, passed to the handler. A deadline timer aborts it and replies `503` if nothing was sent yet; `res.on('close', () => { if (!res.writableFinished) ac.abort(); })` aborts it when the client goes away. `'close'` fires on a normal finish too, so clear the timer there. Once the signal is aborted, ignore the handler's rejection; a second response would throw `ERR_HTTP_HEADERS_SENT`. Drill: [node-12](../practice/live-coding/02-nodejs.md#node-12).
 
 Abortable sleep (built in as `setTimeout` from `node:timers/promises`):
 ```js
@@ -191,7 +191,7 @@ async function withTimeout(task, ms) {          // task: (signal) => Promise
   }
 }
 ```
-Drills: [node-12](../practice/live-coding/02-nodejs.md#node-12), [node-13](../practice/live-coding/02-nodejs.md#node-13), [node-45](../practice/live-coding/02-nodejs.md#node-45).
+Drills: [node-13](../practice/live-coding/02-nodejs.md#node-13), [node-45](../practice/live-coding/02-nodejs.md#node-45).
 
 ---
 

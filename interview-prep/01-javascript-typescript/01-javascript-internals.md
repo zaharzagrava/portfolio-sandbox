@@ -680,10 +680,11 @@ user.greet.bind({ name: 'Cy' }).call({ name: 'Dee' });   // 'Cy': bind wins over
 - `new` on a bound function ignores the bound `this` and constructs a new instance (rule 1 beats rule 2).
 - `call(thisArg, a, b)` passes arguments one by one, `apply(thisArg, [a, b])` as an array, `bind(thisArg, a)` returns a new function with `this` and leading arguments fixed (**partial application**).
 - Implementing `bind`: a closure over `fn`, `thisArg` and the bound args that returns `function (...rest) { return fn.apply(thisArg, [...bound, ...rest]) }`. The inner function ignores its own `this`, which is why a later `call` can't change it. The TS typing uses variadic tuples (see `02-advanced-typescript.md` §8).
+- Implementing `call`/`apply` without them: rule 3 does the work. Attach `fn` to `thisArg` under a fresh `Symbol` key (no clash with real properties), call `thisArg[key](...args)`, and delete the key in `finally`. `null`/`undefined` become a plain call (`this` is `undefined` in strict code). Limits the real `call` doesn't have: primitives get boxed, and frozen objects throw on the temporary key.
 
 Practical consequence: class methods passed as callbacks (`emitter.on('x', this.handle)`) lose `this`. Fix it with `.bind(this)`, a wrapper (`() => this.handle()`), or arrow class fields (`handle = () => {}`). Arrow fields create **one function per instance** instead of one on the prototype, a small memory trade-off.
 
-Drills: [ts-30](../practice/live-coding/01-typescript.md#ts-30), [ts-31](../practice/live-coding/01-typescript.md#ts-31).
+Drills: [ts-30](../practice/live-coding/01-typescript.md#ts-30), [ts-31](../practice/live-coding/01-typescript.md#ts-31), [ts-36](../practice/live-coding/01-typescript.md#ts-36).
 
 ---
 
@@ -707,7 +708,9 @@ Drill: [ts-32](../practice/live-coding/01-typescript.md#ts-32).
 
 ## 5. Prototypes and classes
 
-- Every object has `[[Prototype]]`. Property lookup walks the chain.
+- Every object has `[[Prototype]]`. Property lookup walks the chain. `Object.create(proto)` makes an empty object with that prototype; `Object.create(null)` has none (no inherited keys, and not `instanceof Object`).
+- **`new F(...args)`** does three things: creates an object whose `[[Prototype]]` is `F.prototype`, runs `F` with `this` set to it, and returns it, unless `F` returns an object, which replaces it (a returned primitive is ignored). Class constructors throw without `new`; `Reflect.construct(F, args)` is the function form.
+- **`x instanceof F`** never looks at `F` itself: it walks `x`'s prototype chain looking for `F.prototype`. Primitives are never instances, and reassigning `F.prototype` changes the answer for existing objects. `F[Symbol.hasInstance]` overrides the check. Drill: [ts-37](../practice/live-coding/01-typescript.md#ts-37).
 - `class` is mostly syntactic sugar over constructor functions and prototypes, but there are real differences:
   - Class bodies are always strict, and classes are not hoisted the same way (they sit in the TDZ until declared).
   - `#private` fields are **truly private** (brand-checked, not just a naming convention). `#x in obj` is an ergonomic brand check.
@@ -722,7 +725,9 @@ Small utilities built from closures (§2.2). Typing them generically (`<A extend
 
 - **`once(fn)`**: keep a `called` flag and the cached result. Use a separate flag, not `result === undefined`, because `fn` may return `undefined`. Return a regular `function` and call `fn.apply(this, args)` so it also works as a method. Decide what happens if the first call throws (cached as "called", or allow a retry). Drill: [ts-28](../practice/live-coding/01-typescript.md#ts-28).
 - **`memoize(fn, keyFn)`**: a `Map` from key to result. Check `cache.has(key)`, not `get(key) !== undefined`. `JSON.stringify(args)` is a fine default key for primitives but is slow on big objects and ignores Maps and functions. Only memoize pure functions, and bound the cache (LRU or TTL) or it grows forever. For async functions, cache the **promise** (concurrent callers share one request) and delete the key on rejection. Drill: [ts-48](../practice/live-coding/01-typescript.md#ts-48).
-- **Debounce vs throttle**: debounce waits for a quiet period of `wait` ms, then fires once with the last arguments (search box, autosave): every call `clearTimeout`s and restarts the timer. Throttle fires at most once per interval during continuous calls (scroll, resize). Useful extras: `cancel()` and `flush()`. Type the timer as `ReturnType<typeof setTimeout>` (an object in Node, a number in browsers). Drill: [ts-47](../practice/live-coding/01-typescript.md#ts-47).
+- **LRU cache**: a `Map` keeps insertion order, so it is both the hash table and the recency list. On a hit, `delete` + `set` moves the key to the end; over capacity, evict `map.keys().next().value`, the least recently used key. All O(1). For a TTL, store an absolute `expiresAt` per entry and drop expired entries when they are read; capacity eviction bounds the ones nobody reads. Drill: [ts-44](../practice/live-coding/01-typescript.md#ts-44).
+- **`curry(fn)`**: collect arguments in a closure until there are `fn.length` of them, then call `fn`. Build a new array on every call (`[...collected, ...next]`): pushing into a shared one breaks reuse of a partial like `const add1 = add(1)`. `fn.length` doesn't count rest or default parameters. Currying keeps returning functions until every argument has arrived; partial application (`bind`) fixes some arguments once. Drill: [ts-47](../practice/live-coding/01-typescript.md#ts-47).
+- **Debounce vs throttle**: debounce waits for a quiet period of `wait` ms, then fires once with the last arguments (search box, autosave): every call `clearTimeout`s and restarts the timer. Throttle fires at most once per interval during continuous calls (scroll, resize). Useful extras: `cancel()` and `flush()`. Type the timer as `ReturnType<typeof setTimeout>` (an object in Node, a number in browsers). Drill: [node-25](../practice/live-coding/02-nodejs.md#node-25).
 - **`pipe` / `compose`**: `pipe(f, g, h)(x)` is `h(g(f(x)))`, left to right: `fns.reduce((acc, fn) => fn(acc), x)`. `compose` is the same with `reduceRight`. Typing a heterogeneous pipe needs overloads (`02-advanced-typescript.md` §7). Drill: [ts-49](../practice/live-coding/01-typescript.md#ts-49).
 
 ---
@@ -751,7 +756,7 @@ A hand-written clone recurses per type and keeps a `WeakMap` from original to co
 
 - **Deep equal**: `Object.is` first; reject non-objects; require the same prototype (so `[]` ≠ `{}`); special-case types whose state isn't in own keys (`Date` by `getTime()`, `Map`, `Set`); then compare key counts and recurse with `Object.hasOwn`. Cycles need a `WeakMap` of pairs being compared. Drill: [ts-42](../practice/live-coding/01-typescript.md#ts-42).
 - **Deep merge** (defaults + overrides): copy the target, recurse only when **both** sides are plain objects, otherwise the source value wins. Don't mutate inputs, and skip dangerous keys (prototype pollution, §5). Arrays are usually replaced, not merged. Drill: [ts-43](../practice/live-coding/01-typescript.md#ts-43).
-- **Diff**: walk the union of both key sets: only in `after` = added, only in `before` = removed, both plain objects = recurse with the path, else compare. Diff arrays of entities by a stable id, not by index. Drill: [ts-44](../practice/live-coding/01-typescript.md#ts-44).
+- **Diff**: walk the union of both key sets: only in `after` = added, only in `before` = removed, both plain objects = recurse with the path, else compare. Diff arrays of entities by a stable id, not by index.
 
 ### 7.4 Paths and nesting
 
@@ -764,8 +769,8 @@ A hand-written clone recurses per type and keeps a `WeakMap` from original to co
 - `map`/`filter`/`reduce` don't mutate. `reduce` without an initial value starts from the first element and **throws on an empty array**, so pass an initial value. `filter` has a type-guard overload that narrows the result. Drill: [ts-34](../practice/live-coding/01-typescript.md#ts-34).
 - `sort`, `reverse` and `splice` mutate **in place** (`sort` returns the same array). Use the copying versions `toSorted`, `toReversed`, `toSpliced` (ES2023), or `[...arr].sort()`.
 - **groupBy**: one pass with `(groups[key] ??= []).push(item)`. Built-ins: `Object.groupBy` (returns a null-prototype object) and `Map.groupBy` (for non-string keys) in Node 21+. Drill: [ts-35](../practice/live-coding/01-typescript.md#ts-35).
-- **Dedupe**: a `Set` of seen keys is O(n), versus O(n²) for `filter` + `findIndex`. `Set` uses SameValueZero (§4): primitives by value, objects by reference, so pass a key function for objects. To keep the last occurrence, fill a `Map` key → item. Drill: [ts-37](../practice/live-coding/01-typescript.md#ts-37).
-- **Chunk**: step `size` at a time with `slice` (it clamps the end). Validate `size > 0`, or the loop never advances. Process batches sequentially with `for...of` + `await`; `Promise.all` would start them all at once. Drill: [ts-36](../practice/live-coding/01-typescript.md#ts-36).
+- **Dedupe**: a `Set` of seen keys is O(n), versus O(n²) for `filter` + `findIndex`. `Set` uses SameValueZero (§4): primitives by value, objects by reference, so pass a key function for objects. To keep the last occurrence, fill a `Map` key → item.
+- **Chunk**: step `size` at a time with `slice` (it clamps the end). Validate `size > 0`, or the loop never advances. Process batches sequentially with `for...of` + `await`; `Promise.all` would start them all at once.
 
 ### 7.6 Parsing and transforming payloads
 
@@ -779,6 +784,7 @@ A hand-written clone recurses per type and keeps a `WeakMap` from original to co
 ### States and guarantees
 - A promise is pending, then fulfilled or rejected, and it settles **once**. `then` callbacks are **always asynchronous** (microtasks), even when the promise is already resolved.
 - Resolving with a thenable **adopts** its state. This costs extra microtask ticks, which is why `return await` and `return promise` once had different timings.
+- Implementing one: a state (set once) plus a list of waiting callbacks. `then` returns a **new** promise and runs its callback with `queueMicrotask`, also when already settled. The callback's return value resolves the new promise (adopting it if it's a thenable, which is what makes chaining work); a missing callback passes the value or error through; a throw becomes a rejection. Resolving a promise with itself rejects with `TypeError`. Drill: [node-09](../practice/live-coding/02-nodejs.md#node-09).
 
 ### Combinators: know which one to use
 

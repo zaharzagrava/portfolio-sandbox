@@ -364,7 +364,7 @@ http.createServer((req, res) => {
   });
 }).listen(3000);
 ```
-Missing for production: schema validation, `requestTimeout`/`headersTimeout`, auth, structured logs with request IDs, graceful shutdown. Drill: [node-38](../practice/live-coding/02-nodejs.md#node-38).
+A real endpoint adds two things on top. **Validation**: parse the `unknown` body into a typed object, reject unknown fields (mass assignment), and return every field error at once as a `400` with `details: [{ field, message }]`. **Pagination** for lists: `?limit=&cursor=` with keyset paging, where the opaque cursor holds the last id and you fetch `limit + 1` rows to know if there's a next page ([API design §2](../04-api-design/03-idempotency-pagination-rate-limiting-webhooks.md#2-pagination)); a bad `limit` or cursor is a `400`, not a `500`. Still missing for production: `requestTimeout`/`headersTimeout`, auth, structured logs with request IDs, graceful shutdown. Drill: [node-38](../practice/live-coding/02-nodejs.md#node-38).
 
 ### Middleware chains
 **Express model**: a stack of `(req, res, next)` functions; error handlers have 4 parameters `(err, req, res, next)`. `next()` calls the next normal layer; `next(err)` skips normal layers until an error handler. Core of it:

@@ -17,7 +17,7 @@ const res = await fetch(url, { signal: AbortSignal.any([req.signal, AbortSignal.
 // ioredis: commandTimeout
 ```
 - Choose timeouts from **measured latency distributions**, not guesses, and revisit them.
-- A timeout must **cancel** the work, not just stop waiting for it: abort the signal passed to the call. Implementation: [withTimeout and AbortSignal](../01-javascript-typescript/04-fetch-axios-async.md#6-cancellation-and-timeouts-abortcontroller).
+- A timeout must **cancel** the work, not just stop waiting for it: abort the signal passed to the call. Implementation: [withTimeout and AbortSignal](../01-javascript-typescript/04-fetch-axios-async.md#6-cancellation-and-timeouts-abortcontroller). Overall deadline for an incoming request, as middleware: [node-12](../practice/live-coding/02-nodejs.md#node-12).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase

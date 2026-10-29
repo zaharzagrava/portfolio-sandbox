@@ -112,11 +112,16 @@ Interview tip: practice drawing in **Excalidraw** (or whatever the company's pla
 | Hot data, counters, rate limits, sessions | Redis | eviction, persistence, failover loss |
 | Async work, buffering, decoupling | SQS/RabbitMQ | at-least-once, DLQ, idempotency |
 | Event streaming, replay, multiple consumers | Kafka | partitions, keys, ordering, retention |
+| Managed event streaming on AWS | Kinesis Data Streams (+ Firehose → S3) | shards: ~1,000 records/s or 1 MB/s write each; partition key choice; 24 h–365 d retention; Firehose = no-code batched delivery to S3/warehouse |
 | Search, fuzzy, facets | Elasticsearch/OpenSearch | sync via CDC/outbox, eventual consistency |
 | Blobs/files | S3 | presigned URLs, lifecycle |
 | Analytics | warehouse (BigQuery/Snowflake/Redshift/ClickHouse) | ELT from CDC/events, columnar |
 | Workflows | Step Functions/Temporal | durable state, retries, compensation |
 | Real-time push | WebSockets/SSE + pub/sub backplane (Redis) | connection state, scaling sockets horizontally |
+
+**Hot path vs side effect.** The hot path is what the user waits for (redirect, page load, checkout response): keep it to lookup → answer, from cache where possible. Side effects (counting clicks/views/likes, analytics, emails, search indexing) go async, never awaited, to a durable stream or queue; **pre-aggregate** before writing when the same key gets many events (count in memory, flush every few seconds, write `+N` instead of N rows). Then a slow or broken side system can't slow or break the hot path.
+
+**One source of truth, many read models (CQRS / derived data).** Writes go to one place (usually Postgres). Each heavy read pattern gets its own store, shaped for exactly that query, fed from the source by events (outbox or CDC) and rebuildable from it: posts by ID → DB + cache; feeds → Redis lists of IDs; full-text search → OpenSearch; dashboards → rollups / ClickHouse; company analytics → warehouse. Cost: each read model is eventually consistent (seconds behind) and needs a backfill/rebuild path. Start with one database; add a read model only when a query can't be served well from it.
 
 Scaling patterns: stateless app tier + horizontal scaling; cache-aside; read replicas; **CQRS** read models; sharding by tenant/user; async processing; **consistent hashing** (adding or removing a node moves only ~1/N of the keys); back-pressure and load shedding.
 

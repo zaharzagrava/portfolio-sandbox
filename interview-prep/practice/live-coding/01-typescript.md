@@ -2,7 +2,7 @@
 
 50 problems most likely to come up in Full Stack Node.js live-coding rounds. Try each one before opening the solution. Every solution was run against the tests shown.
 
-Difficulty: Easy 21 · Medium 22 · Hard 7
+Difficulty: Easy 18 · Medium 24 · Hard 8
 
 ## Index
 
@@ -28,12 +28,12 @@ Difficulty: Easy 21 · Medium 22 · Hard 7
 | ts-18 | [Branded IDs: UserId vs OrderId](#ts-18) | Branded types | Medium |
 | ts-19 | [Result<T, E> instead of throwing](#ts-19) | Result type | Medium |
 | ts-20 | [Typed fetch wrapper with an endpoint map](#ts-20) | Typed API client | Medium |
-| ts-21 | [Word counts: Record, index signatures and missing keys](#ts-21) | Record vs index signature | Easy |
+| ts-21 | [Typed in-memory key-value store with TTL](#ts-21) | Generic classes | Medium |
 | ts-22 | [Readonly arrays, tuple types and a useState-like tuple](#ts-22) | Readonly arrays and tuples | Medium |
 | ts-23 | [Typed event emitter: on<K extends keyof Events>](#ts-23) | Typed event emitter | Hard |
 | ts-24 | [Which lines compile? Structural typing and excess property checks](#ts-24) | Structural typing | Easy |
 | ts-25 | [Typed dot-paths: Paths<T> and PathValue<T, P>](#ts-25) | Template literal types | Hard |
-| ts-26 | [Type-level snake_case to camelCase keys](#ts-26) | Template literal types | Hard |
+| ts-26 | [Typed route matcher and mini router](#ts-26) | Template literal types | Hard |
 | ts-27 | [Counter factory with private state](#ts-27) | Closures | Easy |
 | ts-28 | [Implement once()](#ts-28) | Closures | Easy |
 | ts-29 | [Output puzzle: closures in a var vs let loop](#ts-29) | Closures | Easy |
@@ -43,18 +43,18 @@ Difficulty: Easy 21 · Medium 22 · Hard 7
 | ts-33 | [Output puzzle: hoisting and the temporal dead zone](#ts-33) | Hoisting and TDZ | Easy |
 | ts-34 | [Implement map, filter and reduce](#ts-34) | Array methods | Easy |
 | ts-35 | [Typed groupBy](#ts-35) | Array utilities | Easy |
-| ts-36 | [Chunk an array](#ts-36) | Array utilities | Easy |
-| ts-37 | [Remove duplicates by key](#ts-37) | Array utilities | Easy |
+| ts-36 | [Implement call and apply](#ts-36) | this binding | Medium |
+| ts-37 | [Implement new, Object.create and instanceof](#ts-37) | Prototypes | Medium |
 | ts-38 | [Flatten a nested array to a given depth](#ts-38) | Recursion | Medium |
 | ts-39 | [Flatten a nested object to dot paths](#ts-39) | Recursion | Medium |
 | ts-40 | [Get a value by path with a default (lodash.get)](#ts-40) | Object utilities | Medium |
 | ts-41 | [Deep clone (and why JSON cloning breaks)](#ts-41) | Deep clone | Hard |
 | ts-42 | [Deep equality check](#ts-42) | Deep equal | Medium |
 | ts-43 | [Deep merge config objects safely](#ts-43) | Deep merge | Medium |
-| ts-44 | [Diff two objects: added, removed, changed](#ts-44) | Object diff | Medium |
+| ts-44 | [LRU cache with TTL](#ts-44) | Caching | Medium |
 | ts-45 | [Convert API payload keys: snake_case <-> camelCase](#ts-45) | Data transformation | Medium |
 | ts-46 | [Parse a query string into an object](#ts-46) | Parsing | Medium |
-| ts-47 | [Typed debounce with cancel and flush](#ts-47) | Closures + timers | Medium |
+| ts-47 | [Typed curry](#ts-47) | Currying | Hard |
 | ts-48 | [Memoize with a cache key](#ts-48) | Memoization | Medium |
 | ts-49 | [Typed pipe and compose](#ts-49) | Function composition | Hard |
 | ts-50 | [Mini zod: validate unknown JSON into a typed object](#ts-50) | Runtime validation | Hard |
@@ -1967,61 +1967,102 @@ const wrongPath = () => {
 ---
 
 <a id="ts-21"></a>
-### ts-21. Word counts: Record, index signatures and missing keys
+### ts-21. Typed in-memory key-value store with TTL
 
-*Record vs index signature · Easy*
+*Generic classes · Medium*
 
-1. Implement `countWords(text): Record<string, number>` (lowercase words, letters and apostrophes only).
-2. Implement `getCount(counts, word): number` that returns `0` for words that are not present.
-3. Declare `type Scores` where **both** `math` and `english` keys are required numbers.
+Implement `TypedStore<Schema>`, an in-memory store where each key has its own value type:
+
+- `set(key, value, { ttlMs? })`: `value` must match `Schema[key]`; without `ttlMs` the entry never expires
+- `get(key)`: returns `Schema[key] | undefined`; expired entries count as missing
+- `has(key)`, `delete(key)`, `sweep()` (removes expired entries, returns how many)
+- the clock is injectable: `new TypedStore<S>({ now })`
 
 ```ts
-const c = countWords('The cat and the hat');
-c                         // { the: 2, cat: 1, and: 1, hat: 1 }
-getCount(c, 'dog')        // 0
-getCount(c, 'toString')   // 0  (not a function!)
-countWords('constructor') // { constructor: 1 }
+const store = new TypedStore<{ user: { name: string }; visits: number }>();
+store.set('visits', 1, { ttlMs: 1000 });
+store.get('visits')        // 1, typed number | undefined
+store.set('visits', 'x')   // compile error
+// 1 s later: store.get('visits') -> undefined
 ```
 
 **Starter**
 
 ```ts
-function countWords(text: string): Record<string, number> {
-  // TODO
-}
+class TypedStore<Schema extends object> {
+  constructor(opts: { now?: () => number } = {}) {}
 
-function getCount(counts: Record<string, number>, word: string): number {
-  // TODO
-}
+  set<K extends keyof Schema>(key: K, value: Schema[K], opts: { ttlMs?: number } = {}): void {
+    // TODO
+  }
 
-type Scores = unknown; // TODO
+  get<K extends keyof Schema>(key: K): Schema[K] | undefined {
+    // TODO
+  }
+}
 ```
 
 <details>
 <summary>Solution</summary>
 
 ```ts
-function countWords(text: string): Record<string, number> {
-  // A Map avoids clashes with inherited keys like "constructor" or "__proto__".
-  const counts = new Map<string, number>();
-  for (const word of text.toLowerCase().match(/[a-z']+/g) ?? []) {
-    counts.set(word, (counts.get(word) ?? 0) + 1);
+type Entry<V> = { value: V; expiresAt: number };
+
+class TypedStore<Schema extends object> {
+  #data = new Map<keyof Schema, Entry<Schema[keyof Schema]>>();
+  #now: () => number;
+
+  constructor(opts: { now?: () => number } = {}) {
+    this.#now = opts.now ?? Date.now;
   }
-  return Object.fromEntries(counts);
-}
 
-function getCount(counts: Record<string, number>, word: string): number {
-  return Object.hasOwn(counts, word) ? counts[word] : 0;
-}
+  set<K extends keyof Schema>(key: K, value: Schema[K], opts: { ttlMs?: number } = {}): void {
+    const expiresAt = opts.ttlMs === undefined ? Infinity : this.#now() + opts.ttlMs;
+    this.#data.set(key, { value, expiresAt });
+  }
 
-type Scores = Record<'math' | 'english', number>;
+  get<K extends keyof Schema>(key: K): Schema[K] | undefined {
+    // The Map holds a union of all value types; set<K> guarantees this key holds Schema[K].
+    return this.#live(key)?.value as Schema[K] | undefined;
+  }
+
+  has(key: keyof Schema): boolean {
+    return this.#live(key) !== undefined;
+  }
+
+  delete(key: keyof Schema): boolean {
+    return this.#data.delete(key);
+  }
+
+  sweep(): number {
+    const now = this.#now();
+    let removed = 0;
+    for (const [key, entry] of this.#data) {
+      if (now >= entry.expiresAt) {
+        this.#data.delete(key); // deleting while iterating a Map is safe
+        removed++;
+      }
+    }
+    return removed;
+  }
+
+  // Lazy expiry: an expired entry is removed the moment someone reads it.
+  #live(key: keyof Schema): Entry<Schema[keyof Schema]> | undefined {
+    const entry = this.#data.get(key);
+    if (entry && this.#now() >= entry.expiresAt) {
+      this.#data.delete(key);
+      return undefined;
+    }
+    return entry;
+  }
+}
 ```
 
-**Why it works.** `Record<string, number>` is the same as the index signature `{ [key: string]: number }`, and TypeScript assumes every key exists: `counts['dog']` is typed `number` but is `undefined` at runtime. Enable `noUncheckedIndexedAccess` to get `number | undefined` on index access. With a literal key union, `Record<'math' | 'english', number>` requires every key. A plain object also inherits keys like `toString` and `constructor`, so use `Object.hasOwn` or a `Map` when keys come from user input.
+**Why it works.** `K extends keyof Schema` ties each key to its own value type, so `set('visits', 'x')` fails and `get('visits')` returns `number | undefined`. A `Map` cannot express "this key maps to that type", so the one cast lives inside `get`, guarded by the typed `set`. Expiry is lazy (checked on read) plus `sweep()`, because lazy expiry alone keeps entries that are never read again in memory forever. Store an absolute `expiresAt`, check presence of the entry rather than the value (`0`, `''` and `false` are valid values), and inject the clock so tests don't sleep.
 
-**Say it.** Index signatures promise a value for every key, which is a lie for dictionaries, so I check with Object.hasOwn, build counts in a Map, and use a Record with a literal key union when all keys are known.
+**Say it.** Generic methods constrained to keyof Schema give each key its own value type; entries store an absolute expiry time, reads drop expired entries lazily, and a sweep removes the ones nobody reads.
 
-**Follow-up.** Q: When should you use a `Map` instead of an object as a dictionary? A: When keys are dynamic or user-provided, when you add and remove keys often, or when keys are not strings. Maps have no inherited keys, keep insertion order and have `.size`.
+**Follow-up.** Q: How would you run the sweep in production, and what else is missing? A: `setInterval(() => store.sweep(), 60_000).unref()` so the timer does not keep the process alive, cleared in a `close()` method; add a max size with LRU eviction so memory is bounded. Redis does the same thing: lazy expiry on access plus a periodic sampling of keys with a TTL.
 
 <details>
 <summary>Tests</summary>
@@ -2032,24 +2073,35 @@ import assert from 'node:assert/strict';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Expect<T extends true> = T;
 
+let t = 1_000;
+const store = new TypedStore<{ user: { name: string }; visits: number; flag: boolean }>({ now: () => t });
 
-const c = countWords('The cat and the hat');
-assert.deepEqual(c, { the: 2, cat: 1, and: 1, hat: 1 });
-assert.equal(getCount(c, 'the'), 2);
-assert.equal(getCount(c, 'dog'), 0);
-assert.equal(getCount(c, 'toString'), 0);
-assert.equal(countWords('constructor constructor')['constructor'], 2);
-assert.deepEqual(countWords(''), {});
+store.set('user', { name: 'Ada' });
+store.set('visits', 0, { ttlMs: 100 });
+store.set('flag', false, { ttlMs: 50 });
 
-type cases = [
-  Expect<Equal<Scores, { math: number; english: number }>>,
-  Expect<Equal<Record<string, number>, { [key: string]: number }>>,
-];
+const visits = store.get('visits');
+type cases = [Expect<Equal<typeof visits, number | undefined>>];
 
-const s: Scores = { math: 5, english: 4 };
-assert.equal(s.math, 5);
-// @ts-expect-error english is required
-const missing: Scores = { math: 5 };
+assert.equal(visits, 0);
+assert.equal(store.has('flag'), true); // falsy values still count as present
+t += 60;
+assert.equal(store.has('flag'), false);
+assert.equal(store.get('visits'), 0);
+t += 50;
+assert.equal(store.get('visits'), undefined);
+assert.deepEqual(store.get('user'), { name: 'Ada' });
+
+store.set('visits', 5, { ttlMs: 10 });
+t += 20;
+assert.equal(store.sweep(), 1);
+assert.equal(store.delete('user'), true);
+assert.equal(store.get('user'), undefined);
+
+// @ts-expect-error visits must be a number
+store.set('visits', 'many');
+// @ts-expect-error unknown key
+store.get('missing');
 ```
 
 </details>
@@ -2475,30 +2527,26 @@ const bad = () => {
 ---
 
 <a id="ts-26"></a>
-### ts-26. Type-level snake_case to camelCase keys
+### ts-26. Typed route matcher and mini router
 
 *Template literal types · Hard*
 
-An API returns snake_case JSON; your app uses camelCase. Write the types so a converted payload is typed correctly:
-
-- `SnakeToCamel<S>`: `'created_at'` -> `'createdAt'`, `'a_b_c'` -> `'aBC'`
-- `CamelKeys<T>`: converts keys deeply, through nested objects and arrays
-
-Also implement the runtime `snakeToCamel(s)` with a return type of `SnakeToCamel<S>`.
+1. Write `RouteParams<P>` that turns a route pattern into a params object type: `RouteParams<'/users/:userId/posts/:postId'>` is `{ userId: string; postId: string }`.
+2. Write `matchRoute(pattern, path)` returning `RouteParams<P> | null`. Literal segments must be equal, `:name` matches one segment (URL-decoded), a trailing slash is ignored.
+3. Write a `Router` with `on(method, pattern, handler)` where the handler's `params` are typed from the pattern, and `handle(method, path)` returning `{ status: 200, body }`, `404` (no path matches) or `405` (path matches, method doesn't).
 
 ```ts
-CamelKeys<{ user_id: number; order_items: { item_id: number }[] }>
-// { userId: number; orderItems: { itemId: number }[] }
-snakeToCamel('created_at') // 'createdAt' (type 'createdAt')
+matchRoute('/users/:id', '/users/42')   // { id: '42' }
+matchRoute('/users/:id', '/orders/42')  // null
+new Router().on('GET', '/users/:id', (p) => p.id).handle('GET', '/users/7') // { status: 200, body: '7' }
 ```
 
 **Starter**
 
 ```ts
-type SnakeToCamel<S extends string> = string; // TODO
-type CamelKeys<T> = unknown; // TODO
+type RouteParams<P extends string> = any; // TODO
 
-function snakeToCamel<S extends string>(s: S): SnakeToCamel<S> {
+function matchRoute<P extends string>(pattern: P, path: string): RouteParams<P> | null {
   // TODO
 }
 ```
@@ -2507,28 +2555,72 @@ function snakeToCamel<S extends string>(s: S): SnakeToCamel<S> {
 <summary>Solution</summary>
 
 ```ts
-type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
-  ? `${Head}${Capitalize<SnakeToCamel<Tail>>}`
-  : S;
+type ParamNames<P extends string> =
+  P extends `${string}:${infer Param}/${infer Rest}`
+    ? Param | ParamNames<Rest>
+    : P extends `${string}:${infer Param}`
+      ? Param
+      : never;
 
-type CamelKeys<T> = T extends readonly (infer U)[]
-  ? CamelKeys<U>[]
-  : T extends Date
-    ? T
-    : T extends object
-      ? { [K in keyof T as K extends string ? SnakeToCamel<K> : K]: CamelKeys<T[K]> }
-      : T;
+type RouteParams<P extends string> = { [K in ParamNames<P>]: string };
 
-function snakeToCamel<S extends string>(s: S): SnakeToCamel<S> {
-  return s.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase()) as SnakeToCamel<S>;
+function matchRoute<P extends string>(pattern: P, path: string): RouteParams<P> | null {
+  const split = (s: string) => s.split('/').filter(Boolean); // also ignores a trailing slash
+  const expected = split(pattern);
+  const actual = split(path);
+  if (expected.length !== actual.length) return null;
+
+  const params: Record<string, string> = {};
+  for (let i = 0; i < expected.length; i++) {
+    if (expected[i].startsWith(':')) {
+      try {
+        params[expected[i].slice(1)] = decodeURIComponent(actual[i]);
+      } catch {
+        return null; // malformed escape like %E0%A4%A
+      }
+    } else if (expected[i] !== actual[i]) {
+      return null;
+    }
+  }
+  // TS can't follow the runtime loop, so one cast to the computed type.
+  return params as RouteParams<P>;
+}
+
+type Route = { method: string; prepare: (path: string) => (() => unknown) | null };
+
+class Router {
+  #routes: Route[] = [];
+
+  on<P extends string>(method: string, pattern: P, handler: (params: RouteParams<P>) => unknown): this {
+    this.#routes.push({
+      method: method.toUpperCase(),
+      // Keep the typed handler inside a closure, so the stored route needs no cast.
+      prepare: (path) => {
+        const params = matchRoute(pattern, path);
+        return params ? () => handler(params) : null;
+      },
+    });
+    return this;
+  }
+
+  handle(method: string, path: string): { status: number; body?: unknown } {
+    let pathMatched = false;
+    for (const route of this.#routes) {
+      const run = route.prepare(path);
+      if (!run) continue;
+      if (route.method === method.toUpperCase()) return { status: 200, body: run() };
+      pathMatched = true;
+    }
+    return { status: pathMatched ? 405 : 404 };
+  }
 }
 ```
 
-**Why it works.** `${infer Head}_${infer Tail}` splits at the first underscore (inference is non-greedy for the first placeholder), and recursing on `Tail` handles any number of segments; `Capitalize` upper-cases each following segment. `CamelKeys` is a recursive conditional type: arrays recurse into their element type, `Date` stays as is, objects are remapped with an `as` clause, primitives stop. The runtime needs one cast because TypeScript cannot follow `String.replace`.
+**Why it works.** `${string}:${infer Param}/${infer Rest}` skips everything up to the first `:`, captures the name up to the next `/`, and recurses on the rest; the second branch catches a param at the very end. A mapped type over that union builds the object, and a pattern with no params gives `{}`. At runtime, split both strings into segments and compare them pairwise; decode only param values and treat a decode error as no match. The router stores each typed handler inside a closure, so routes with different param types fit in one array, and it returns 405 rather than 404 when the path exists under another method.
 
-**Say it.** I split the string type at the first underscore with infer, capitalize the recursively converted rest, and apply that to every key with a key-remapping mapped type that recurses through objects and arrays.
+**Say it.** A recursive template-literal type pulls out every name after a colon and a mapped type turns them into a params object; at runtime I compare segments one by one, and the router keeps each typed handler in a closure and tells 404 from 405.
 
-**Follow-up.** Q: What about the opposite direction, camelCase to snake_case? A: Walk the string one character at a time: `S extends `${infer C}${infer R}`` and emit `_${Lowercase<C>}` when `C` is an upper-case letter (`C extends Uppercase<C>` and `C` is not `Lowercase<C>`).
+**Follow-up.** Q: How do real routers match fast with hundreds of routes? A: They build a radix tree (trie) of segments, as `find-my-way` in Fastify does, so matching costs O(path length) instead of trying every route; static segments are preferred over params, and params over wildcards.
 
 <details>
 <summary>Tests</summary>
@@ -2539,39 +2631,29 @@ import assert from 'node:assert/strict';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Expect<T extends true> = T;
 
-
-type ApiOrder = {
-  order_id: number;
-  created_at: Date;
-  billing_address: { zip_code: string };
-  order_items: { item_id: number; unit_price: number }[];
-  status: 'paid' | 'open';
-};
-
+const m = matchRoute('/users/:userId/posts/:postId', '/users/7/posts/a%20b');
 type cases = [
-  Expect<Equal<SnakeToCamel<'created_at'>, 'createdAt'>>,
-  Expect<Equal<SnakeToCamel<'a_b_c'>, 'aBC'>>,
-  Expect<Equal<SnakeToCamel<'id'>, 'id'>>,
-  Expect<Equal<
-    CamelKeys<ApiOrder>,
-    {
-      orderId: number;
-      createdAt: Date;
-      billingAddress: { zipCode: string };
-      orderItems: { itemId: number; unitPrice: number }[];
-      status: 'paid' | 'open';
-    }
-  >>,
+  Expect<Equal<typeof m, { userId: string; postId: string } | null>>,
+  Expect<Equal<RouteParams<'/health'>, {}>>,
 ];
+assert.deepEqual(m, { userId: '7', postId: 'a b' });
+assert.deepEqual(matchRoute('/users/:id', '/users/42/'), { id: '42' });
+assert.equal(matchRoute('/users/:id', '/orders/42'), null);
+assert.equal(matchRoute('/users/:id', '/users/42/extra'), null);
+assert.equal(matchRoute('/users/:id', '/users/%E0%A4%A'), null);
 
-const key = snakeToCamel('created_at');
-type keyType = Expect<Equal<typeof key, 'createdAt'>>;
-assert.equal(key, 'createdAt');
-assert.equal(snakeToCamel('user_id_2'), 'userId2');
-assert.equal(snakeToCamel('name'), 'name');
+const router = new Router()
+  .on('GET', '/users/:id', ({ id }) => ({ id: Number(id) }))
+  .on('DELETE', '/users/:id', () => 'deleted')
+  .on('GET', '/health', () => 'ok');
 
-// @ts-expect-error the converted type is 'createdAt', not 'created_at'
-const wrong: 'created_at' = snakeToCamel('created_at');
+assert.deepEqual(router.handle('GET', '/users/42'), { status: 200, body: { id: 42 } });
+assert.deepEqual(router.handle('delete', '/users/42'), { status: 200, body: 'deleted' });
+assert.deepEqual(router.handle('POST', '/users/42'), { status: 405 });
+assert.deepEqual(router.handle('GET', '/nope'), { status: 404 });
+
+// @ts-expect-error the pattern has no :name param
+router.on('GET', '/teams/:teamId', (p) => p.name);
 ```
 
 </details>
@@ -3325,25 +3407,29 @@ assert.deepEqual(groupBy(['apple', 'avocado', 'banana'], (s) => s[0]), { a: ['ap
 ---
 
 <a id="ts-36"></a>
-### ts-36. Chunk an array
+### ts-36. Implement call and apply
 
-*Array utilities · Easy*
+*this binding · Medium*
 
-Implement `chunk(arr, size)`: split an array into groups of `size`. The last group holds the remaining items. Throw a `RangeError` if `size` is not a positive integer. Do not mutate the input.
+Implement `myCall(fn, thisArg, ...args)` and `myApply(fn, thisArg, args)` that behave like `fn.call` / `fn.apply`, **without** using `call`, `apply`, `bind` or `Reflect.apply`. The object passed as `thisArg` must look unchanged afterwards, even if `fn` throws.
 
 ```ts
-chunk([1, 2, 3, 4, 5], 2)  // [[1, 2], [3, 4], [5]]
-chunk(['a', 'b'], 5)       // [['a', 'b']]
-chunk([], 3)               // []
-chunk([1], 0)              // throws RangeError
+function intro(this: { name: string }, greeting: string) {
+  return `${greeting}, ${this.name}`;
+}
+myCall(intro, { name: 'Ada' }, 'Hi')       // 'Hi, Ada'
+myApply(intro, { name: 'Bob' }, ['Hey'])   // 'Hey, Bob'
+myApply(Array.prototype.slice, { 0: 'a', 1: 'b', length: 2 }, [])  // ['a', 'b']
 ```
-
-Typical use: sending database inserts or API calls in batches.
 
 **Starter**
 
 ```ts
-function chunk<T>(arr: readonly T[], size: number): T[][] {
+function myCall<T, A extends unknown[], R>(fn: (this: T, ...args: A) => R, thisArg: T, ...args: A): R {
+  // TODO: hint: how does obj.method() decide what `this` is?
+}
+
+function myApply<T, A extends unknown[], R>(fn: (this: T, ...args: A) => R, thisArg: T, args: A): R {
   // TODO
 }
 ```
@@ -3352,23 +3438,32 @@ function chunk<T>(arr: readonly T[], size: number): T[][] {
 <summary>Solution</summary>
 
 ```ts
-function chunk<T>(arr: readonly T[], size: number): T[][] {
-  if (!Number.isInteger(size) || size <= 0) {
-    throw new RangeError(`size must be a positive integer, got ${size}`);
+function myCall<T, A extends unknown[], R>(fn: (this: T, ...args: A) => R, thisArg: T, ...args: A): R {
+  if (thisArg === null || thisArg === undefined) {
+    // In strict code a plain call already runs with this === undefined.
+    return (fn as (...args: A) => R)(...args);
   }
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    out.push(arr.slice(i, i + size));
+  // A Symbol key can't clash with or overwrite an existing property.
+  const key = Symbol('fn');
+  const target = Object(thisArg) as Record<symbol, (...args: A) => R>;
+  target[key] = fn as (...args: A) => R;
+  try {
+    return target[key](...args); // a method call, so `this` is target
+  } finally {
+    delete target[key]; // clean up even if fn throws
   }
-  return out;
+}
+
+function myApply<T, A extends unknown[], R>(fn: (this: T, ...args: A) => R, thisArg: T, args: A): R {
+  return myCall(fn, thisArg, ...args);
 }
 ```
 
-**Why it works.** Step through the array `size` items at a time and `slice` each window; `slice` clamps the end index, so the last chunk is simply shorter. O(n) time and space. Validate `size`: with 0 the loop would never advance (infinite loop), and a fraction gives odd results.
+**Why it works.** The implicit binding rule does the work: `obj.method()` runs `method` with `this === obj`, so temporarily attach `fn` to `thisArg` and call it as a method. A `Symbol` key avoids overwriting a real property and does not show up in `Object.keys` or `JSON.stringify` while it is attached; `finally` removes it even when `fn` throws. `Object(thisArg)` boxes primitives (the real `call` in strict code passes them unboxed), and `null`/`undefined` become a plain call. `apply` is the same as `call` with the arguments given as an array.
 
-**Say it.** I step through the array in increments of size and slice each window, after validating size so the loop can't run forever.
+**Say it.** I attach the function to the target object under a unique Symbol, call it as a method so this points at the object, and delete the key in a finally block; apply just spreads the array into call.
 
-**Follow-up.** Q: How would you process 10,000 ids against an API in batches of 100, at most one batch at a time? A: `for (const batch of chunk(ids, 100)) await processBatch(batch);` A sequential `for...of` with `await` keeps one batch in flight; `Promise.all` over the batches would start them all at once.
+**Follow-up.** Q: When does this trick fail? A: On frozen or sealed objects (adding the key throws in strict mode), on Proxies with a `set` trap, and for primitives, which get boxed. The real `call` has none of these limits, which is why in real code you use `fn.call` or `Reflect.apply`. Arrow functions ignore it either way, because they have no own `this`.
 
 <details>
 <summary>Tests</summary>
@@ -3376,12 +3471,36 @@ function chunk<T>(arr: readonly T[], size: number): T[][] {
 ```ts
 import assert from 'node:assert/strict';
 
-assert.deepEqual(chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
-assert.deepEqual(chunk(['a', 'b'], 5), [['a', 'b']]);
-assert.deepEqual(chunk([1, 2, 3], 1), [[1], [2], [3]]);
-assert.deepEqual(chunk([], 3), []);
-assert.throws(() => chunk([1], 0), RangeError);
-assert.throws(() => chunk([1], 1.5), RangeError);
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Expect<T extends true> = T;
+
+function intro(this: { name: string }, greeting: string, mark: string) {
+  return `${greeting}, ${this.name}${mark}`;
+}
+const ada = { name: 'Ada' };
+const r = myCall(intro, ada, 'Hi', '!');
+type cases = [Expect<Equal<typeof r, string>>];
+assert.equal(r, 'Hi, Ada!');
+assert.equal(myApply(intro, ada, ['Hello', '.']), 'Hello, Ada.');
+assert.deepEqual(Object.getOwnPropertySymbols(ada), []);
+assert.deepEqual(Object.keys(ada), ['name']);
+
+assert.deepEqual(myApply(Array.prototype.slice, { 0: 'a', 1: 'b', length: 2 }, []), ['a', 'b']);
+
+function whoAmI(this: unknown) {
+  return this;
+}
+assert.equal(myCall(whoAmI, undefined), undefined);
+
+const target = {};
+const thrower = function (this: object): never {
+  throw new Error('boom');
+};
+assert.throws(() => myCall(thrower, target), /boom/);
+assert.equal(Object.getOwnPropertySymbols(target).length, 0);
+
+// @ts-expect-error mark is missing
+myApply(intro, ada, ['Hi']);
 ```
 
 </details>
@@ -3391,30 +3510,38 @@ assert.throws(() => chunk([1], 1.5), RangeError);
 ---
 
 <a id="ts-37"></a>
-### ts-37. Remove duplicates by key
+### ts-37. Implement new, Object.create and instanceof
 
-*Array utilities · Easy*
+*Prototypes · Medium*
 
-Implement `uniqueBy(items, keyFn)` that keeps the **first** item for each key and preserves order. Also show the one-liner for an array of primitives.
+Implement three built-ins by hand:
+
+- `myCreate(proto)`: a new empty object whose prototype is `proto` (may be `null`)
+- `myNew(Ctor, ...args)`: what `new Ctor(...args)` does for a constructor function, without using `new` on `Ctor`
+- `myInstanceOf(value, Ctor)`: what `value instanceof Ctor` does, without `instanceof`
 
 ```ts
-const users = [
-  { id: 1, email: 'a@x.io' },
-  { id: 2, email: 'b@x.io' },
-  { id: 3, email: 'A@x.io' },
-];
-uniqueBy(users, (u) => u.email.toLowerCase()).map((u) => u.id)  // [1, 2]
-unique([3, 1, 3, 2, 1])  // [3, 1, 2]
+function Person(this: { name: string }, name: string) { this.name = name; }
+Person.prototype.greet = function () { return `Hi, ${this.name}`; };
+
+const p = myNew(Person, 'Ada');
+p.name                         // 'Ada'
+myInstanceOf(p, Person)        // true
+myInstanceOf(p, Array)         // false
 ```
 
 **Starter**
 
 ```ts
-function uniqueBy<T, K>(items: readonly T[], keyFn: (item: T) => K): T[] {
+function myCreate(proto: object | null): object {
   // TODO
 }
 
-function unique<T>(items: readonly T[]): T[] {
+function myNew<A extends unknown[], T extends object>(Ctor: (this: T, ...args: A) => unknown, ...args: A): T {
+  // TODO
+}
+
+function myInstanceOf(value: unknown, Ctor: Function): boolean {
   // TODO
 }
 ```
@@ -3423,26 +3550,40 @@ function unique<T>(items: readonly T[]): T[] {
 <summary>Solution</summary>
 
 ```ts
-function uniqueBy<T, K>(items: readonly T[], keyFn: (item: T) => K): T[] {
-  const seen = new Set<K>();
-  return items.filter((item) => {
-    const key = keyFn(item);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+function myCreate(proto: object | null): object {
+  // ES5 polyfill: function F() {}; F.prototype = proto; return new F(); (it can't handle null)
+  const obj = {};
+  Object.setPrototypeOf(obj, proto);
+  return obj;
 }
 
-function unique<T>(items: readonly T[]): T[] {
-  return [...new Set(items)];
+function myNew<A extends unknown[], T extends object>(Ctor: (this: T, ...args: A) => unknown, ...args: A): T {
+  // 1. create an empty object linked to Ctor.prototype
+  const obj = myCreate((Ctor as { prototype: object }).prototype) as T;
+  // 2. run the constructor with this = the new object
+  const result = Ctor.apply(obj, args);
+  // 3. a constructor that returns an object (or function) replaces the new object; primitives are ignored
+  const isObject = (typeof result === 'object' && result !== null) || typeof result === 'function';
+  return isObject ? (result as T) : obj;
+}
+
+function myInstanceOf(value: unknown, Ctor: Function): boolean {
+  if ((typeof value !== 'object' || value === null) && typeof value !== 'function') return false;
+  const target = Ctor.prototype;
+  let proto = Object.getPrototypeOf(value);
+  while (proto !== null) {
+    if (proto === target) return true;
+    proto = Object.getPrototypeOf(proto);
+  }
+  return false;
 }
 ```
 
-**Why it works.** A `Set` gives O(1) membership checks, so the whole pass is O(n) time and O(n) space, versus O(n^2) for `filter` + `findIndex`. Sets keep insertion order, so the first occurrence wins and order is preserved. Sets compare with SameValueZero: primitives by value (NaN equals NaN) but objects by reference, which is why you need a key function for objects.
+**Why it works.** `new` does three things: creates an object whose `[[Prototype]]` is `Ctor.prototype`, calls `Ctor` with `this` set to it, and returns it, unless the constructor explicitly returns an object, which wins (a returned primitive is ignored). `instanceof` does not look at the constructor at all: it walks the prototype chain of the value and checks whether `Ctor.prototype` appears in it, so primitives are never instances and changing `Ctor.prototype` later changes the answer for existing objects. `Object.create(null)` makes an object with no prototype at all, so it is not an `instanceof Object`.
 
-**Say it.** I track seen keys in a Set and keep an item only the first time its key appears, which is linear time and keeps the original order.
+**Say it.** new links a fresh object to the constructor's prototype, runs the constructor with this bound to it and returns it unless the constructor returned an object; instanceof just walks the value's prototype chain looking for Ctor.prototype.
 
-**Follow-up.** Q: What if you want to keep the last occurrence instead? A: Build a `Map` from key to item while iterating (later items overwrite), then return `[...map.values()]`. Note this keeps the position of the first key; to also keep the last position, iterate in reverse and reverse the result.
+**Follow-up.** Q: Why does `myNew` fail for a `class`, and how can `instanceof` be customised? A: Class constructors throw when called without `new`, so a real implementation uses `Reflect.construct(Ctor, args)`, which also sets `new.target` for subclasses. `instanceof` first calls `Ctor[Symbol.hasInstance]` if it exists, which is how a class can accept objects from another realm or by shape.
 
 <details>
 <summary>Tests</summary>
@@ -3450,16 +3591,49 @@ function unique<T>(items: readonly T[]): T[] {
 ```ts
 import assert from 'node:assert/strict';
 
-const users = [
-  { id: 1, email: 'a@x.io' },
-  { id: 2, email: 'b@x.io' },
-  { id: 3, email: 'A@x.io' },
-];
-assert.deepEqual(uniqueBy(users, (u) => u.email.toLowerCase()).map((u) => u.id), [1, 2]);
-assert.deepEqual(uniqueBy(users, (u) => u.id).length, 3);
-assert.deepEqual(unique([3, 1, 3, 2, 1]), [3, 1, 2]);
-assert.deepEqual(unique([NaN, NaN]), [NaN]);
-assert.deepEqual(uniqueBy([], (x: number) => x), []);
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Expect<T extends true> = T;
+
+function Person(this: { name: string }, name: string) {
+  this.name = name;
+}
+Person.prototype.greet = function (this: { name: string }) {
+  return `Hi, ${this.name}`;
+};
+
+const p = myNew(Person, 'Ada');
+type cases = [Expect<Equal<typeof p, { name: string }>>];
+assert.equal(p.name, 'Ada');
+assert.equal(Object.getPrototypeOf(p), Person.prototype);
+assert.equal((p as { name: string; greet(): string }).greet(), 'Hi, Ada');
+assert.equal(myInstanceOf(p, Person), p instanceof Person);
+assert.equal(myInstanceOf(p, Object), true);
+assert.equal(myInstanceOf(p, Array), false);
+
+function Override(this: object) {
+  return { replaced: true };
+}
+function Primitive(this: { x: number }) {
+  this.x = 1;
+  return 42;
+}
+assert.deepEqual(myNew(Override), { replaced: true });
+assert.deepEqual({ ...myNew(Primitive) }, { x: 1 });
+
+class Animal {}
+class Dog extends Animal {}
+assert.equal(myInstanceOf(new Dog(), Animal), true);
+assert.equal(myInstanceOf(new Animal(), Dog), false);
+assert.equal(myInstanceOf(42, Number), false);
+
+const bare = myCreate(null);
+assert.equal(Object.getPrototypeOf(bare), null);
+assert.equal(myInstanceOf(bare, Object), false);
+const base = { kind: 'base' };
+assert.equal((myCreate(base) as { kind?: string }).kind, 'base');
+
+// @ts-expect-error Person needs a name
+myNew(Person);
 ```
 
 </details>
@@ -4001,40 +4175,40 @@ assert.deepEqual(deepMerge<PlainObject>({ a: { b: 1 } }, { a: 'replaced' }), { a
 ---
 
 <a id="ts-44"></a>
-### ts-44. Diff two objects: added, removed, changed
+### ts-44. LRU cache with TTL
 
-*Object diff · Medium*
+*Caching · Medium*
 
-Implement `diff(before, after)` for an audit log. Return:
+Implement `LRUCache<K, V>` with a fixed `capacity` and an optional default `ttlMs`:
 
-```ts
-type Diff = {
-  added: Record<string, unknown>;
-  removed: Record<string, unknown>;
-  changed: Record<string, { from: unknown; to: unknown }>;
-};
-```
+- `get(key)`: the value, or `undefined` if missing or expired; a hit makes the key the most recently used
+- `set(key, value, ttlMs?)`: insert or update; when the cache is over capacity, evict the **least recently used** key
+- `has(key)`: like `get` but does not change the order
+- inject the clock: `{ now }`
 
-Recurse into nested plain objects and report keys as dot paths. Compare other values with `Object.is`, except arrays, which are compared by content (`JSON.stringify` is fine here).
+All operations O(1).
 
 ```ts
-diff({ name: 'Ada', role: 'dev', address: { city: 'London' } },
-     { name: 'Ada', address: { city: 'Paris' }, age: 36 })
-// { added: { age: 36 }, removed: { role: 'dev' },
-//   changed: { 'address.city': { from: 'London', to: 'Paris' } } }
+const cache = new LRUCache<string, number>({ capacity: 2 });
+cache.set('a', 1); cache.set('b', 2);
+cache.get('a');      // 1  ('a' is now most recent)
+cache.set('c', 3);   // evicts 'b'
+cache.has('b');      // false
 ```
 
 **Starter**
 
 ```ts
-type Diff = {
-  added: Record<string, unknown>;
-  removed: Record<string, unknown>;
-  changed: Record<string, { from: unknown; to: unknown }>;
-};
+class LRUCache<K, V> {
+  constructor(opts: { capacity: number; ttlMs?: number; now?: () => number }) {}
 
-function diff(before: Record<string, unknown>, after: Record<string, unknown>): Diff {
-  // TODO
+  get(key: K): V | undefined {
+    // TODO
+  }
+
+  set(key: K, value: V, ttlMs?: number): this {
+    // TODO
+  }
 }
 ```
 
@@ -4042,48 +4216,67 @@ function diff(before: Record<string, unknown>, after: Record<string, unknown>): 
 <summary>Solution</summary>
 
 ```ts
-type Diff = {
-  added: Record<string, unknown>;
-  removed: Record<string, unknown>;
-  changed: Record<string, { from: unknown; to: unknown }>;
-};
+class LRUCache<K, V> {
+  // A Map iterates in insertion order: the first key is the least recently used.
+  #map = new Map<K, { value: V; expiresAt: number }>();
+  #capacity: number;
+  #ttlMs: number;
+  #now: () => number;
 
-type Plain = Record<string, unknown>;
-
-function isPlainObject(value: unknown): value is Plain {
-  return typeof value === 'object' && value !== null && Object.getPrototypeOf(value) === Object.prototype;
-}
-
-function sameValue(a: unknown, b: unknown): boolean {
-  if (Array.isArray(a) && Array.isArray(b)) return JSON.stringify(a) === JSON.stringify(b);
-  return Object.is(a, b);
-}
-
-function diff(before: Plain, after: Plain, prefix = '', result?: Diff): Diff {
-  const out: Diff = result ?? { added: {}, removed: {}, changed: {} };
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-
-  for (const key of keys) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    const inBefore = Object.hasOwn(before, key);
-    const inAfter = Object.hasOwn(after, key);
-    const from = before[key];
-    const to = after[key];
-
-    if (!inBefore) out.added[path] = to;
-    else if (!inAfter) out.removed[path] = from;
-    else if (isPlainObject(from) && isPlainObject(to)) diff(from, to, path, out);
-    else if (!sameValue(from, to)) out.changed[path] = { from, to };
+  constructor(opts: { capacity: number; ttlMs?: number; now?: () => number }) {
+    if (!Number.isInteger(opts.capacity) || opts.capacity < 1) throw new RangeError('capacity must be a positive integer');
+    this.#capacity = opts.capacity;
+    this.#ttlMs = opts.ttlMs ?? Infinity;
+    this.#now = opts.now ?? Date.now;
   }
-  return out;
+
+  get(key: K): V | undefined {
+    const entry = this.#live(key);
+    if (!entry) return undefined;
+    // Delete + set moves the key to the end (most recently used).
+    this.#map.delete(key);
+    this.#map.set(key, entry);
+    return entry.value;
+  }
+
+  has(key: K): boolean {
+    return this.#live(key) !== undefined;
+  }
+
+  set(key: K, value: V, ttlMs: number = this.#ttlMs): this {
+    this.#map.delete(key); // so an update also moves the key to the end
+    this.#map.set(key, { value, expiresAt: this.#now() + ttlMs });
+    if (this.#map.size > this.#capacity) {
+      const oldest = this.#map.keys().next().value as K;
+      this.#map.delete(oldest);
+    }
+    return this;
+  }
+
+  delete(key: K): boolean {
+    return this.#map.delete(key);
+  }
+
+  get size(): number {
+    return this.#map.size;
+  }
+
+  #live(key: K) {
+    const entry = this.#map.get(key);
+    if (entry && this.#now() >= entry.expiresAt) {
+      this.#map.delete(key); // lazy expiry
+      return undefined;
+    }
+    return entry;
+  }
 }
 ```
 
-**Why it works.** Take the union of keys from both objects and classify each: only in `after` is added, only in `before` is removed, both plain objects means recurse with the extended path, otherwise compare values. Use `Object.hasOwn` rather than `!== undefined` so a key explicitly set to `undefined` still counts as present. One shared result object is passed down the recursion. O(total keys) time.
+**Why it works.** A JavaScript `Map` remembers insertion order and deletes in O(1), so it is both the hash table and the recency list: on every hit, delete the key and set it again to move it to the end, and evict `map.keys().next().value`, the first (least recently used) key. Each entry stores an absolute `expiresAt`; expired entries are removed when they are read, and capacity eviction bounds the ones that are never read. Traps: forgetting to move the key on `get`, evicting on update of an existing key, and checking `value === undefined` instead of entry presence.
 
-**Say it.** I take the union of keys, classify each as added, removed or present in both, recurse into nested plain objects with a dotted path, and record a change when the leaf values differ.
+**Say it.** I use a Map as both the hash table and the recency order: a hit deletes and re-inserts the key, and when I go over capacity I evict the first key; each entry carries an expiry time that I check on read.
 
-**Follow-up.** Q: How would you diff arrays of objects, e.g. order line items? A: Match items by a stable id rather than by index, then report added, removed and changed items per id; index-based diffs produce noise when an item is inserted at the front.
+**Follow-up.** Q: How would you build this without an ordered Map (in Java or C++, or in an interview that forbids it)? A: A hash map from key to a node in a doubly linked list: move the node to the head on access, remove from the tail on eviction, both O(1). For a cache shared across processes, use Redis with `maxmemory-policy allkeys-lru` and `EX` on keys.
 
 <details>
 <summary>Tests</summary>
@@ -4091,15 +4284,38 @@ function diff(before: Plain, after: Plain, prefix = '', result?: Diff): Diff {
 ```ts
 import assert from 'node:assert/strict';
 
-assert.deepEqual(
-  diff({ name: 'Ada', role: 'dev', address: { city: 'London' } }, { name: 'Ada', address: { city: 'Paris' }, age: 36 }),
-  { added: { age: 36 }, removed: { role: 'dev' }, changed: { 'address.city': { from: 'London', to: 'Paris' } } },
-);
-assert.deepEqual(diff({ tags: ['a'] }, { tags: ['a'] }), { added: {}, removed: {}, changed: {} });
-assert.deepEqual(diff({ tags: ['a'] }, { tags: ['a', 'b'] }).changed, { tags: { from: ['a'], to: ['a', 'b'] } });
-assert.deepEqual(diff({ a: { b: 1 } }, { a: 5 }).changed, { a: { from: { b: 1 }, to: 5 } });
-assert.deepEqual(diff({ x: undefined }, {}).removed, { x: undefined });
-assert.deepEqual(diff({}, {}), { added: {}, removed: {}, changed: {} });
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type Expect<T extends true> = T;
+
+const lru = new LRUCache<string, number>({ capacity: 2 });
+lru.set('a', 1).set('b', 2);
+const a = lru.get('a');
+type cases = [Expect<Equal<typeof a, number | undefined>>];
+assert.equal(a, 1);
+lru.set('c', 3); // evicts b, because a was used more recently
+assert.equal(lru.has('b'), false);
+assert.equal(lru.get('a'), 1);
+assert.equal(lru.get('c'), 3);
+
+lru.set('c', 30); // update: no eviction
+assert.equal(lru.size, 2);
+assert.equal(lru.get('a'), 1);
+lru.set('d', 4); // c is least recently used now
+assert.equal(lru.has('c'), false);
+
+let t = 0;
+const ttl = new LRUCache<string, string>({ capacity: 10, ttlMs: 100, now: () => t });
+ttl.set('k', 'v');
+ttl.set('short', 's', 10);
+t = 50;
+assert.equal(ttl.get('k'), 'v');
+assert.equal(ttl.get('short'), undefined);
+t = 100;
+assert.equal(ttl.get('k'), undefined); // a hit does not extend the TTL
+
+assert.throws(() => new LRUCache({ capacity: 0 }), RangeError);
+// @ts-expect-error values must be numbers
+lru.set('x', 'nope');
 ```
 
 </details>
@@ -4275,25 +4491,28 @@ assert.deepEqual(parseQuery(''), {});
 ---
 
 <a id="ts-47"></a>
-### ts-47. Typed debounce with cancel and flush
+### ts-47. Typed curry
 
-*Closures + timers · Medium*
+*Currying · Hard*
 
-Implement `debounce(fn, wait)`: the returned function delays calling `fn` until `wait` ms have passed since the **last** call, then calls it once with the latest arguments. It must keep `fn`'s parameter types and also expose:
-
-- `cancel()`: drop the pending call
-- `flush()`: run the pending call immediately
+Write `curry(fn)` that lets you supply `fn`'s arguments over several calls, in any grouping. Once all `fn.length` arguments are collected, call `fn`. Partially applied functions must be reusable. Type it so that every step checks argument types and the final result has `fn`'s return type.
 
 ```ts
-const save = debounce((text: string) => api.save(text), 50);
-save('h'); save('he'); save('hel');  // after 50 ms: api.save('hel') once
-save(42);                            // compile error
+const add3 = (a: number, b: number, c: number) => a + b + c;
+const c = curry(add3);
+c(1)(2)(3)     // 6
+c(1, 2)(3)     // 6
+c(1)(2, 3)     // 6
+const add1 = c(1);
+add1(2)(3)     // 6
+add1(10)(10)   // 21
+c('1')         // compile error
 ```
 
 **Starter**
 
 ```ts
-function debounce<A extends unknown[]>(fn: (...args: A) => void, wait: number) {
+function curry<A extends unknown[], R>(fn: (...args: A) => R) {
   // TODO
 }
 ```
@@ -4302,45 +4521,38 @@ function debounce<A extends unknown[]>(fn: (...args: A) => void, wait: number) {
 <summary>Solution</summary>
 
 ```ts
-function debounce<A extends unknown[]>(fn: (...args: A) => void, wait: number) {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let pendingArgs: A | undefined;
+// Non-empty prefixes of a tuple: [a, b, c] -> [a] | [a, b] | [a, b, c]
+type Prefixes<A extends unknown[]> = A extends [infer Head, ...infer Tail] ? [Head] | [Head, ...Prefixes<Tail>] : never;
 
-  function invoke() {
-    timer = undefined;
-    if (pendingArgs === undefined) return;
-    const args = pendingArgs;
-    pendingArgs = undefined;
-    fn(...args);
-  }
+// Remove as many leading elements from A as P has.
+type DropPrefix<A extends unknown[], P extends unknown[]> = P extends [unknown, ...infer PTail]
+  ? A extends [unknown, ...infer ATail]
+    ? DropPrefix<ATail, PTail>
+    : []
+  : A;
 
-  function debounced(...args: A): void {
-    pendingArgs = args;
-    clearTimeout(timer); // restart the wait on every call
-    timer = setTimeout(invoke, wait);
-  }
+type Curried<A extends unknown[], R> = <P extends Prefixes<A>>(
+  ...args: P
+) => DropPrefix<A, P> extends [] ? R : Curried<DropPrefix<A, P>, R>;
 
-  debounced.cancel = () => {
-    clearTimeout(timer);
-    timer = undefined;
-    pendingArgs = undefined;
-  };
-
-  debounced.flush = () => {
-    if (timer === undefined) return;
-    clearTimeout(timer);
-    invoke();
-  };
-
-  return debounced;
+function curry<A extends unknown[], R>(fn: (...args: A) => R): Curried<A, R> {
+  const arity = fn.length;
+  // Each step returns a new function over a new array, so partial applications don't share state.
+  const collect =
+    (collected: unknown[]) =>
+    (...next: unknown[]): unknown => {
+      const all = [...collected, ...next];
+      return all.length >= arity ? fn(...(all as A)) : collect(all);
+    };
+  return collect([]) as Curried<A, R>;
 }
 ```
 
-**Why it works.** The closure holds the timer id and the latest arguments; every call clears the previous timer and starts a new one, so `fn` runs only after a quiet period of `wait` ms. Generic `A extends unknown[]` captures the parameter tuple, so callers get type checking. `cancel` and `flush` are attached as properties of the function; TypeScript infers them on a function declaration. `ReturnType<typeof setTimeout>` works in both Node (a `Timeout` object) and browsers (a number). Debounce suits search inputs and autosave; throttle suits scroll or resize (at most once per interval).
+**Why it works.** At runtime curry is a closure that accumulates arguments until it has `fn.length` of them, then calls `fn`. Each call builds a **new** array (`[...collected, ...next]`) instead of pushing into a shared one, otherwise `add1(2)` and `add1(10)` would corrupt each other. The type lets each call take any non-empty prefix of the remaining parameters, removes that prefix, and recurses until nothing is left, then returns `R`. Trap: `fn.length` does not count rest parameters or parameters with defaults, so curry needs a fixed-arity function (or an explicit arity argument).
 
-**Say it.** Each call stores the latest arguments, clears the existing timer and starts a new one, so the function only fires after the calls stop for wait milliseconds; cancel clears it and flush runs it now.
+**Say it.** I collect arguments in a closure and call the function once I have as many as fn.length, creating a new array each step so partials are reusable; the type takes a prefix of the remaining parameters each call and recurses on what is left.
 
-**Follow-up.** Q: What is the difference between debounce and throttle? A: Debounce waits for a pause and then fires once (the last call wins). Throttle fires at most once per interval during continuous calls, for example the first call and then every 100 ms.
+**Follow-up.** Q: What is the difference between currying and partial application? A: Partial application fixes some arguments once and returns a function of the rest (`bind`, `myBind`). Currying turns an n-argument function into a chain that keeps returning functions until all arguments are supplied. In practice curried helpers make point-free pipelines easy (`pipe(filter(isActive), map(toDto))`); lodash's curry also supports placeholders (`_`) to skip positions.
 
 <details>
 <summary>Tests</summary>
@@ -4351,34 +4563,27 @@ import assert from 'node:assert/strict';
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Expect<T extends true> = T;
 
+const add3 = (a: number, b: number, c: number) => a + b + c;
+const c = curry(add3);
+const six = c(1)(2)(3);
+const fmt = curry((prefix: string, n: number) => `${prefix}${n}`);
+const label = fmt('#')(5);
+type cases = [Expect<Equal<typeof six, number>>, Expect<Equal<typeof label, string>>];
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+assert.equal(six, 6);
+assert.equal(c(1, 2)(3), 6);
+assert.equal(c(1)(2, 3), 6);
+assert.equal(c(1, 2, 3), 6);
 
-const saved: string[] = [];
-const save = debounce((text: string) => saved.push(text), 30);
-save('h');
-save('he');
-save('hel');
-assert.deepEqual(saved, []);
-await sleep(60);
-assert.deepEqual(saved, ['hel']);
+const add1 = c(1);
+assert.equal(add1(2)(3), 6);
+assert.equal(add1(10)(10), 21); // partials don't share collected arguments
+assert.equal(label, '#5');
 
-save('cancel me');
-save.cancel();
-await sleep(50);
-assert.deepEqual(saved, ['hel']);
-
-save('flushed');
-save.flush();
-assert.deepEqual(saved, ['hel', 'flushed']);
-await sleep(50);
-assert.deepEqual(saved, ['hel', 'flushed']); // no second call after flush
-
-type cases = [Expect<Equal<Parameters<typeof save>, [text: string]>>];
-const wrong = () => {
-  // @ts-expect-error text must be a string
-  save(42);
-};
+// @ts-expect-error a must be a number
+c('1');
+// @ts-expect-error too many arguments
+c(1, 2, 3, 4);
 ```
 
 </details>

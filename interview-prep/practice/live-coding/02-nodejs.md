@@ -2,13 +2,13 @@
 
 50 problems most likely to come up in Full Stack Node.js live-coding rounds. Try each one before opening the solution. Every solution was run against the tests shown.
 
-Difficulty: Easy 20 · Medium 23 · Hard 7
+Difficulty: Easy 15 · Medium 25 · Hard 10
 
 ## Index
 
 | # | Problem | Topic | Level |
 |---|---|---|---|
-| node-01 | [Sync vs setTimeout vs Promise.then](#node-01) | Event loop | Easy |
+| node-01 | [Full event-loop order: nextTick, microtasks, timers, immediate, I/O](#node-01) | Event loop | Hard |
 | node-02 | [nextTick, microtasks, timers and setImmediate](#node-02) | Event loop | Medium |
 | node-03 | [async/await ordering](#node-03) | Event loop | Medium |
 | node-04 | [Nested timers and microtasks inside timers](#node-04) | Event loop | Medium |
@@ -16,10 +16,10 @@ Difficulty: Easy 20 · Medium 23 · Hard 7
 | node-06 | [process.nextTick starvation](#node-06) | Event loop | Hard |
 | node-07 | [Implement Promise.all](#node-07) | Promises | Easy |
 | node-08 | [Implement Promise.allSettled](#node-08) | Promises | Easy |
-| node-09 | [Implement Promise.race](#node-09) | Promises | Easy |
+| node-09 | [Implement a minimal Promise class](#node-09) | Promises | Hard |
 | node-10 | [Implement Promise.any](#node-10) | Promises | Medium |
 | node-11 | [Promisify a callback API](#node-11) | Promises | Easy |
-| node-12 | [Abortable sleep](#node-12) | Promises | Easy |
+| node-12 | [Request timeout and cancellation middleware](#node-12) | Cancellation | Medium |
 | node-13 | [withTimeout for async operations](#node-13) | Promises | Easy |
 | node-14 | [Retry with exponential backoff and jitter](#node-14) | Promises | Medium |
 | node-15 | [Map with a concurrency limit](#node-15) | Concurrency | Medium |
@@ -44,8 +44,8 @@ Difficulty: Easy 20 · Medium 23 · Hard 7
 | node-34 | [Read a large file line by line](#node-34) | Streams | Easy |
 | node-35 | [Stream a CSV and aggregate](#node-35) | Streams | Medium |
 | node-36 | [Readable.from and generator pipelines](#node-36) | Streams | Easy |
-| node-37 | [Count bytes and lines in a stream](#node-37) | Streams | Easy |
-| node-38 | [Minimal JSON API with node:http](#node-38) | HTTP | Medium |
+| node-37 | [Streaming file upload with a size limit](#node-37) | Streams | Hard |
+| node-38 | [REST endpoint with validation and cursor pagination](#node-38) | HTTP | Medium |
 | node-39 | [Express-style middleware chain](#node-39) | Middleware | Medium |
 | node-40 | [Graceful shutdown](#node-40) | Reliability | Hard |
 | node-41 | [Circuit breaker](#node-41) | Reliability | Hard |
@@ -54,7 +54,7 @@ Difficulty: Easy 20 · Medium 23 · Hard 7
 | node-44 | [Hash and verify passwords with scrypt](#node-44) | Security | Easy |
 | node-45 | [Cancel a long async job with AbortController](#node-45) | Cancellation | Medium |
 | node-46 | [Offload CPU work to a worker thread](#node-46) | worker_threads | Medium |
-| node-47 | [Base64, base64url and decoding a JWT payload](#node-47) | Buffer | Easy |
+| node-47 | [Sign and verify a JWT (HS256) and an auth middleware](#node-47) | Security | Medium |
 | node-48 | [Walk a directory tree recursively](#node-48) | File system | Easy |
 | node-49 | [Batch writes by size or time](#node-49) | Batching | Medium |
 | node-50 | [Request context with AsyncLocalStorage](#node-50) | AsyncLocalStorage | Easy |
@@ -62,55 +62,147 @@ Difficulty: Easy 20 · Medium 23 · Hard 7
 ---
 
 <a id="node-01"></a>
-### node-01. Sync vs setTimeout vs Promise.then
+### node-01. Full event-loop order: nextTick, microtasks, timers, immediate, I/O
 
-*Event loop · Easy*
+*Event loop · Hard*
 
-What does this print, and why?
+Saved as `order.cjs` (CommonJS) and run with `node order.cjs`. What does it print, line by line, and why? The busy-wait at the end makes sure both timers have already expired when the loop starts.
 
 ```js
-console.log('A');
-setTimeout(() => console.log('B'), 0);
-Promise.resolve().then(() => console.log('C'));
-console.log('D');
+const fs = require('node:fs');
+
+console.log('1 sync start');
+
+setTimeout(() => {
+  console.log('timeout 1');
+  process.nextTick(() => console.log('timeout 1 → nextTick'));
+  Promise.resolve().then(() => console.log('timeout 1 → promise'));
+}, 0);
+
+setTimeout(() => console.log('timeout 2'), 0);
+
+setImmediate(() => console.log('immediate 1'));
+
+fs.readFile(__filename, () => {
+  console.log('readFile callback');
+  setTimeout(() => console.log('readFile → timeout'), 0);
+  setImmediate(() => console.log('readFile → immediate'));
+  process.nextTick(() => console.log('readFile → nextTick'));
+});
+
+Promise.resolve().then(() => {
+  console.log('promise 1');
+  process.nextTick(() => console.log('promise 1 → nextTick'));
+  Promise.resolve().then(() => console.log('promise 1 → promise'));
+});
+
+queueMicrotask(() => console.log('queueMicrotask'));
+
+process.nextTick(() => {
+  console.log('nextTick 1');
+  process.nextTick(() => console.log('nextTick 1 → nextTick'));
+  Promise.resolve().then(() => console.log('nextTick 1 → promise'));
+});
+
+(async () => {
+  console.log('async fn (sync part)');
+  await null;
+  console.log('async fn after await');
+})();
+
+const start = Date.now(); while (Date.now() - start < 5) {}
+console.log('2 sync end');
 ```
 
 **Starter**
 
 ```ts
-// Write down the order you expect, then explain each step.
+// Write all 20 lines in the order they print.
+// Next to each group, write which queue or phase it comes from.
 ```
 
 <details>
 <summary>Solution</summary>
 
 ```ts
-// The snippet, with `log` injectable so the order can be captured.
-export function puzzle(log: (msg: string) => void = console.log) {
-  log('A');
-  setTimeout(() => log('B'), 0);
-  Promise.resolve().then(() => log('C'));
-  log('D');
-}
+// Printed order (stable across runs, Node 22 and 24, CommonJS)
+export const output = [
+  '1 sync start',
+  'async fn (sync part)',
+  '2 sync end',
+  'nextTick 1',
+  'nextTick 1 → nextTick',
+  'promise 1',
+  'queueMicrotask',
+  'async fn after await',
+  'nextTick 1 → promise',
+  'promise 1 → promise',
+  'promise 1 → nextTick',
+  'timeout 1',
+  'timeout 1 → nextTick',
+  'timeout 1 → promise',
+  'timeout 2',
+  'immediate 1',
+  'readFile callback',
+  'readFile → nextTick',
+  'readFile → immediate',
+  'readFile → timeout',
+];
 ```
 
-**Why it works.** Prints `A, D, C, B`. Synchronous code runs to completion first (A, D). When the call stack is empty, the microtask queue (promise callbacks) is drained before the event loop moves on, so C runs next. B is a macrotask in the timers phase, which only runs on a later loop turn, even with a 0 ms delay. The trap is thinking `setTimeout(fn, 0)` means "run immediately".
+**Why it works.** Rule: sync code → whole `nextTick` queue → whole promise microtask queue (repeat both until empty) → event-loop phases: timers → poll (I/O) → check (`setImmediate`). After **every** single macrotask callback, nextTick + microtasks are drained again.
 
-**Say it.** Sync code runs first, then all microtasks like promise callbacks, and only then the event loop picks up timers, so a 0 ms timeout always runs after a resolved promise.
+```text
+1 sync start              ┐ the script itself: all sync code, top to bottom.
+async fn (sync part)      │ an async fn runs synchronously until its first await
+2 sync end                ┘
+nextTick 1                ┐ nextTick queue first (CommonJS), drained fully,
+nextTick 1 → nextTick     ┘ including ticks added while draining
+promise 1                 ┐ promise queue, FIFO: F, G, the await continuation,
+queueMicrotask            │ then 'nextTick 1 → promise' (queued during the tick drain),
+async fn after await      │ then 'promise 1 → promise' (appended during this drain)
+nextTick 1 → promise      │
+promise 1 → promise       ┘
+promise 1 → nextTick        promise queue empty → nextTick queue checked again
+timeout 1                 ┐ TIMERS phase: both timers expired (busy-wait).
+timeout 1 → nextTick      │ After EACH timer callback: nextTick, then promises,
+timeout 1 → promise       │ so they run before timeout 2 (Node ≥ 11)
+timeout 2                 ┘
+immediate 1                 POLL: readFile not done yet (open/stat/read/close) → CHECK
+readFile callback         ┐ later iteration, POLL runs the I/O callback;
+readFile → nextTick       │ its nextTick runs right after it;
+readFile → immediate      │ poll → check in the same iteration: immediate ALWAYS wins
+readFile → timeout        ┘ inside an I/O callback; the timer waits for the next loop
+```
 
-**Follow-up.** Q: Would `setTimeout(fn, 0)` ever fire in less than 1 ms? A: No. Node clamps 0 to 1 ms, and the callback also waits for the current stack and all microtasks to finish.
+Traps: `queueMicrotask` and `.then` share one FIFO queue; a nextTick queued *inside* a promise callback waits until the whole promise queue is empty; `setTimeout` vs `setImmediate` in the main script is a race, but inside an I/O callback it is deterministic.
+
+**Say it.** Sync first, then the nextTick queue, then promise microtasks, repeated until both are empty; then timers, poll and check. After every single callback Node drains nextTick and microtasks again, and inside an I/O callback setImmediate always beats setTimeout.
+
+**Follow-up.** Q: What changes if you save it as `order.mjs` (ES module)? A: The module body already runs inside a microtask, so the promise queue drains first: `promise 1, queueMicrotask, async fn after await, promise 1 → promise`, and only then `nextTick 1`, `promise 1 → nextTick`, `nextTick 1 → nextTick`, `nextTick 1 → promise`. Timers and I/O order stay the same. That's why event-loop puzzles say CommonJS.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-const out: string[] = [];
-puzzle((m) => out.push(m));
-assert.deepEqual(out, ['A', 'D']);
-await new Promise((r) => setTimeout(r, 20));
-assert.deepEqual(out, ['A', 'D', 'C', 'B']);
+// Run the exact snippet as CommonJS in a child process and compare its stdout.
+const script = "const fs = require('node:fs');\n\nconsole.log('1 sync start');\n\nsetTimeout(() => {\n  console.log('timeout 1');\n  process.nextTick(() => console.log('timeout 1 → nextTick'));\n  Promise.resolve().then(() => console.log('timeout 1 → promise'));\n}, 0);\n\nsetTimeout(() => console.log('timeout 2'), 0);\n\nsetImmediate(() => console.log('immediate 1'));\n\nfs.readFile(__filename, () => {\n  console.log('readFile callback');\n  setTimeout(() => console.log('readFile → timeout'), 0);\n  setImmediate(() => console.log('readFile → immediate'));\n  process.nextTick(() => console.log('readFile → nextTick'));\n});\n\nPromise.resolve().then(() => {\n  console.log('promise 1');\n  process.nextTick(() => console.log('promise 1 → nextTick'));\n  Promise.resolve().then(() => console.log('promise 1 → promise'));\n});\n\nqueueMicrotask(() => console.log('queueMicrotask'));\n\nprocess.nextTick(() => {\n  console.log('nextTick 1');\n  process.nextTick(() => console.log('nextTick 1 → nextTick'));\n  Promise.resolve().then(() => console.log('nextTick 1 → promise'));\n});\n\n(async () => {\n  console.log('async fn (sync part)');\n  await null;\n  console.log('async fn after await');\n})();\n\nconst start = Date.now(); while (Date.now() - start < 5) {}\nconsole.log('2 sync end');";
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'node01-'));
+const file = path.join(dir, 'order.cjs');
+fs.writeFileSync(file, script);
+try {
+  const printed = execFileSync(process.execPath, [file], { encoding: 'utf8' }).trim().split('\n');
+  assert.deepEqual(printed, output);
+  assert.equal(output.length, 20);
+} finally {
+  fs.rmSync(dir, { recursive: true, force: true });
+}
 ```
 
 </details>
@@ -661,24 +753,37 @@ assert.deepEqual((await allSettled([slow]))[0], { status: 'fulfilled', value: 'l
 ---
 
 <a id="node-09"></a>
-### node-09. Implement Promise.race
+### node-09. Implement a minimal Promise class
 
-*Promises · Easy*
+*Promises · Hard*
 
-Implement `race(values)` like `Promise.race`: settle the same way as the first input that settles (fulfilled or rejected). An empty input stays pending forever.
+Implement `MyPromise<T>` with:
+
+- `new MyPromise((resolve, reject) => ...)`; a throw in the executor rejects
+- it settles **once**; later `resolve`/`reject` calls are ignored
+- `then(onFulfilled?, onRejected?)` returns a new promise; callbacks always run **asynchronously** (microtasks), even if already settled; a missing callback passes the value or error through; a throw inside a callback rejects the returned promise
+- resolving with a thenable (another promise) **adopts** its state; resolving with itself rejects with `TypeError`
+- `catch`, `finally`, `MyPromise.resolve`, `MyPromise.reject`
 
 ```ts
-await race([delay(30, 'slow'), delay(10, 'fast')]) // 'fast'
-await race([delay(30, 'ok'), rejectAfter(10)])     // rejects
-await race([5, delay(10, 1)])                      // 5
+new MyPromise<number>((r) => r(1)).then((x) => x + 1).then(console.log); // 2
+await MyPromise.reject(new Error('x')).catch((e) => 'handled');          // 'handled'
 ```
 
 **Starter**
 
 ```ts
-export function race<T>(values: Iterable<T | PromiseLike<T>>): Promise<T> {
-  // TODO
-  throw new Error('not implemented');
+export class MyPromise<T> {
+  constructor(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: unknown) => void) => void) {
+    // TODO: state, value, list of waiting callbacks
+  }
+
+  then<R1 = T, R2 = never>(
+    onFulfilled?: ((value: T) => R1 | PromiseLike<R1>) | null,
+    onRejected?: ((reason: unknown) => R2 | PromiseLike<R2>) | null,
+  ): MyPromise<R1 | R2> {
+    // TODO
+  }
 }
 ```
 
@@ -686,21 +791,121 @@ export function race<T>(values: Iterable<T | PromiseLike<T>>): Promise<T> {
 <summary>Solution</summary>
 
 ```ts
-export function race<T>(values: Iterable<T | PromiseLike<T>>): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    for (const item of values) {
-      // The first one to call resolve/reject wins; later calls are ignored.
-      Promise.resolve(item).then(resolve, reject);
+type State<T> =
+  | { status: 'pending' }
+  | { status: 'fulfilled'; value: T }
+  | { status: 'rejected'; reason: unknown };
+
+export class MyPromise<T> {
+  #state: State<T> = { status: 'pending' };
+  #waiting: (() => void)[] = [];
+
+  constructor(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: unknown) => void) => void) {
+    let called = false; // resolve/reject work once, even while a thenable is being adopted
+    const resolve = (value: T | PromiseLike<T>) => {
+      if (called) return;
+      called = true;
+      this.#resolve(value);
+    };
+    const reject = (reason?: unknown) => {
+      if (called) return;
+      called = true;
+      this.#settle({ status: 'rejected', reason });
+    };
+    try {
+      executor(resolve, reject);
+    } catch (err) {
+      reject(err);
     }
-  });
+  }
+
+  #resolve(value: T | PromiseLike<T>): void {
+    if (value === this) {
+      return this.#settle({ status: 'rejected', reason: new TypeError('Chaining cycle detected for promise') });
+    }
+    if ((typeof value === 'object' && value !== null) || typeof value === 'function') {
+      let then: unknown;
+      try {
+        then = (value as PromiseLike<T>).then; // reading .then can throw (getter)
+      } catch (err) {
+        return this.#settle({ status: 'rejected', reason: err });
+      }
+      if (typeof then === 'function') {
+        // Adopt the thenable's state. A badly written thenable may call back twice: only the first call counts.
+        let done = false;
+        try {
+          then.call(
+            value,
+            (v: T) => { if (!done) { done = true; this.#resolve(v); } },
+            (r: unknown) => { if (!done) { done = true; this.#settle({ status: 'rejected', reason: r }); } },
+          );
+        } catch (err) {
+          if (!done) { done = true; this.#settle({ status: 'rejected', reason: err }); }
+        }
+        return;
+      }
+    }
+    this.#settle({ status: 'fulfilled', value: value as T });
+  }
+
+  #settle(state: State<T>): void {
+    if (this.#state.status !== 'pending') return;
+    this.#state = state;
+    for (const run of this.#waiting) queueMicrotask(run);
+    this.#waiting = [];
+  }
+
+  then<R1 = T, R2 = never>(
+    onFulfilled?: ((value: T) => R1 | PromiseLike<R1>) | null,
+    onRejected?: ((reason: unknown) => R2 | PromiseLike<R2>) | null,
+  ): MyPromise<R1 | R2> {
+    return new MyPromise<R1 | R2>((resolve, reject) => {
+      const run = () => {
+        const state = this.#state;
+        try {
+          if (state.status === 'fulfilled') {
+            if (onFulfilled) resolve(onFulfilled(state.value));
+            else resolve(state.value as unknown as R1); // pass the value through
+          } else if (state.status === 'rejected') {
+            if (onRejected) resolve(onRejected(state.reason)); // a handled error fulfills the next promise
+            else reject(state.reason); // pass the error through
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+      if (this.#state.status === 'pending') this.#waiting.push(run);
+      else queueMicrotask(run); // always async, even when already settled
+    });
+  }
+
+  catch<R = never>(onRejected: (reason: unknown) => R | PromiseLike<R>): MyPromise<T | R> {
+    return this.then(undefined, onRejected);
+  }
+
+  finally(onFinally: () => unknown): MyPromise<T> {
+    // Runs on both paths, keeps the original value or error, but waits for a returned promise.
+    return this.then(
+      (value) => MyPromise.resolve(onFinally()).then(() => value),
+      (reason) => MyPromise.resolve(onFinally()).then(() => { throw reason; }),
+    );
+  }
+
+  static resolve<U>(value: U | PromiseLike<U>): MyPromise<U> {
+    return value instanceof MyPromise ? value : new MyPromise<U>((resolve) => resolve(value));
+  }
+
+  static reject<U = never>(reason: unknown): MyPromise<U> {
+    return new MyPromise<U>((_, reject) => reject(reason));
+  }
 }
 ```
 
-**Why it works.** Subscribe `resolve` and `reject` of one outer promise to every input. Whichever input settles first settles the outer promise, and later calls are no-ops because a promise settles only once. Plain values are wrapped with `Promise.resolve`, so they win over pending promises (on the next microtask). Common use: timeouts via racing against a timer. Trap: the losers keep running, and a losing timer should be cleared.
+**Why it works.** A promise is a state machine (pending, then fulfilled or rejected exactly once) plus a list of callbacks waiting for it. `then` always returns a **new** promise and schedules its callback with `queueMicrotask`, which is why `then` callbacks run after the current synchronous code. The callback's return value resolves the new promise, and resolving checks for a thenable and adopts its state: this is what makes chaining and `return fetch(...)` inside `then` work. A missing handler passes the value or error to the next promise; a throw in a handler becomes a rejection. Traps: running callbacks synchronously when already settled, and letting a thenable call back twice.
 
-**Say it.** I attach the outer promise's resolve and reject to every input; the first to settle wins because a promise can only settle once.
+**Say it.** I keep a state and a queue of callbacks; then returns a new promise whose resolve gets the callback's result, callbacks always run as microtasks, and resolving with a thenable subscribes to it instead of storing it as a value.
 
-**Follow-up.** Q: What is the difference between race and any? A: race settles with the first settled result, even a rejection; any waits for the first fulfillment and rejects only if all reject (AggregateError).
+**Follow-up.** Q: How would you add `MyPromise.race` and `MyPromise.all`? A: `race`: `new MyPromise((res, rej) => { for (const p of items) MyPromise.resolve(p).then(res, rej); })`; the first to settle wins because a promise settles only once. `all`: keep a results array indexed by position and a counter of pending items, resolve when it reaches 0, reject on the first error, and resolve `[]` right away for empty input.
 
 <details>
 <summary>Tests</summary>
@@ -708,14 +913,44 @@ export function race<T>(values: Iterable<T | PromiseLike<T>>): Promise<T> {
 ```ts
 import assert from 'node:assert/strict';
 
-const delay = <T>(ms: number, v: T) => new Promise<T>((r) => setTimeout(() => r(v), ms));
-const rejectAfter = (ms: number) => new Promise<never>((_, j) => setTimeout(() => j(new Error('boom')), ms));
-assert.equal(await race([delay(30, 'slow'), delay(10, 'fast')]), 'fast');
-await assert.rejects(race([delay(30, 'ok'), rejectAfter(10)]), /boom/);
-assert.equal(await race([5, delay(10, 1)]), 5);
-const pending = race([]);
-const winner = await Promise.race([pending, delay(20, 'still pending')]);
-assert.equal(winner, 'still pending');
+const tick = () => new Promise((r) => setTimeout(r, 0));
+
+const log: string[] = [];
+const p = new MyPromise<number>((resolve) => {
+  log.push('executor');
+  resolve(1);
+});
+p.then((v) => { log.push(`then ${v}`); });
+log.push('sync');
+await tick();
+assert.deepEqual(log, ['executor', 'sync', 'then 1']);
+
+const chained = await new MyPromise<number>((r) => setTimeout(() => r(2), 5))
+  .then((x) => x * 10)
+  .then((x) => MyPromise.resolve(x + 1))
+  .then((x) => Promise.resolve(x + 1)); // adopts a native promise too
+assert.equal(chained, 22);
+
+const once = await new MyPromise<string>((res, rej) => {
+  res('first');
+  res('second');
+  rej(new Error('ignored'));
+});
+assert.equal(once, 'first');
+
+await assert.rejects(async () => { await new MyPromise(() => { throw new Error('boom'); }); }, /boom/);
+const recovered = await MyPromise.reject<number>(new Error('bad'))
+  .then((x) => x + 1) // skipped: no rejection handler, error passes through
+  .catch((e) => (e as Error).message);
+assert.equal(recovered, 'bad');
+await assert.rejects(async () => { await MyPromise.resolve(1).then(() => { throw new Error('in then'); }); }, /in then/);
+
+let cleaned = false;
+assert.equal(await MyPromise.resolve(5).finally(() => { cleaned = true; }), 5);
+assert.ok(cleaned);
+
+const self: MyPromise<unknown> = new MyPromise((r) => queueMicrotask(() => r(self)));
+await assert.rejects(async () => { await self; }, TypeError);
 ```
 
 </details>
@@ -881,25 +1116,36 @@ await assert.rejects(promisify(throwsSync)(), /sync/);
 ---
 
 <a id="node-12"></a>
-### node-12. Abortable sleep
+### node-12. Request timeout and cancellation middleware
 
-*Promises · Easy*
+*Cancellation · Medium*
 
-Write `sleep(ms, { signal })` that resolves after `ms` milliseconds. If the optional `AbortSignal` is aborted (before or during the wait), clear the timer and reject with `signal.reason`.
+Write `withDeadline(handler, { timeoutMs })` that wraps an async `node:http` handler `(req, res, signal) => Promise<void>`:
+
+- each request gets its own `AbortSignal`, passed to the handler
+- after `timeoutMs`: abort the signal (reason name `TimeoutError`) and reply `503 {"error":"Request timed out"}` if no response has started
+- if the client disconnects before the response finished: abort the signal, send nothing
+- a handler error (not caused by an abort) -> `500`
+- no timer may outlive the request
 
 ```ts
-await sleep(20)                       // resolves after ~20 ms
-const ac = new AbortController();
-const p = sleep(1000, { signal: ac.signal });
-ac.abort();                           // p rejects with an AbortError right away
+http.createServer(withDeadline(async (req, res, signal) => {
+  const rows = await db.query(sql, { signal }); // cancelled on timeout or disconnect
+  res.end(JSON.stringify(rows));
+}, { timeoutMs: 2000 }));
 ```
 
 **Starter**
 
 ```ts
-export function sleep(ms: number, opts: { signal?: AbortSignal } = {}): Promise<void> {
-  // TODO
-  throw new Error('not implemented');
+import http from 'node:http';
+
+type Handler = (req: http.IncomingMessage, res: http.ServerResponse, signal: AbortSignal) => Promise<void>;
+
+export function withDeadline(handler: Handler, opts: { timeoutMs: number }) {
+  return (req: http.IncomingMessage, res: http.ServerResponse): void => {
+    // TODO
+  };
 }
 ```
 
@@ -907,53 +1153,97 @@ export function sleep(ms: number, opts: { signal?: AbortSignal } = {}): Promise<
 <summary>Solution</summary>
 
 ```ts
-export function sleep(ms: number, opts: { signal?: AbortSignal } = {}): Promise<void> {
-  const { signal } = opts;
-  return new Promise<void>((resolve, reject) => {
-    if (signal?.aborted) return reject(signal.reason);
+import http from 'node:http';
 
-    const onAbort = () => {
-      clearTimeout(timer);
-      reject(signal!.reason);
-    };
+type Handler = (req: http.IncomingMessage, res: http.ServerResponse, signal: AbortSignal) => Promise<void>;
+
+function sendJson(res: http.ServerResponse, status: number, body: unknown) {
+  const json = JSON.stringify(body);
+  res.writeHead(status, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(json) });
+  res.end(json);
+}
+
+export function withDeadline(handler: Handler, { timeoutMs }: { timeoutMs: number }) {
+  return (req: http.IncomingMessage, res: http.ServerResponse): void => {
+    const ac = new AbortController();
+
     const timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort);
-      resolve();
-    }, ms);
-    signal?.addEventListener('abort', onAbort, { once: true });
-  });
+      const reason = new Error(`Request timed out after ${timeoutMs} ms`);
+      reason.name = 'TimeoutError';
+      ac.abort(reason);
+      if (!res.headersSent) sendJson(res, 503, { error: 'Request timed out' });
+      else res.destroy(); // the status is already sent: cutting the response is the only signal left
+    }, timeoutMs);
+
+    // 'close' fires both after a normal finish and when the client goes away.
+    res.on('close', () => {
+      clearTimeout(timer);
+      if (!res.writableFinished) ac.abort(new Error('Client disconnected'));
+    });
+
+    handler(req, res, ac.signal).catch((err) => {
+      if (ac.signal.aborted) return; // already answered (timeout) or nobody left to answer (disconnect)
+      if (!res.headersSent) sendJson(res, 500, { error: 'Internal Server Error' });
+      else res.destroy(err);
+    });
+  };
 }
 ```
 
-**Why it works.** The basic version is `new Promise(r => setTimeout(r, ms))`. Supporting cancellation means checking `signal.aborted` first, listening for `abort` to clear the timer and reject, and removing the listener when the timer fires so long-lived signals do not leak listeners. `signal.reason` is an `AbortError` DOMException by default, or whatever was passed to `abort(reason)`. Node also ships this as `setTimeout` from `node:timers/promises`.
+**Why it works.** One `AbortController` per request is the cancellation channel: the timer and the client-disconnect listener both abort it, and the handler passes `signal` to `fetch`, DB drivers and timers so the work actually stops instead of running on for nobody. `res.on('close')` fires for both a normal finish and a disconnect; `res.writableFinished` tells them apart, and clearing the timer there means no timer outlives the request. Once the signal is aborted, the handler's resulting rejection is expected, so it must not trigger a second response (that would throw `ERR_HTTP_HEADERS_SENT`). If headers were already sent when the deadline hits, the status can't change, so destroy the socket.
 
-**Say it.** I wrap setTimeout in a promise, reject immediately if the signal is already aborted, and on abort I clear the timer and reject with the signal's reason, cleaning up the listener either way.
+**Say it.** I create an AbortController per request, abort it from a deadline timer or when the response closes before finishing, pass its signal into the handler, and reply 503 only if nothing was sent yet; the close handler always clears the timer.
 
-**Follow-up.** Q: Why remove the abort listener after the timer fires? A: A shared signal (say, one per request) can outlive many sleeps; leaving listeners attached leaks memory and triggers MaxListenersExceeded warnings.
+**Follow-up.** Q: How does this relate to `server.requestTimeout` and to downstream calls? A: `requestTimeout` only limits receiving the request (slowloris protection), not your handler's work, so you still need an application deadline. Downstream calls should get the remaining budget, e.g. `AbortSignal.any([signal, AbortSignal.timeout(remainingMs)])`, so a slow dependency can't use up the whole request time.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
+import { setTimeout as delay } from 'node:timers/promises';
+import type { AddressInfo } from 'node:net';
 
-const t0 = Date.now();
-await sleep(20);
-assert.ok(Date.now() - t0 >= 15);
+const seen: string[] = [];
+const server = http.createServer(
+  withDeadline(
+    async (req, res, signal) => {
+      signal.addEventListener('abort', () => seen.push(`${req.url} ${(signal.reason as Error).name}: ${(signal.reason as Error).message}`));
+      if (req.url === '/boom') throw new Error('db down');
+      if (req.url?.startsWith('/slow')) await delay(500, undefined, { signal });
+      res.end('ok');
+    },
+    { timeoutMs: 60 },
+  ),
+);
+await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+try {
+  let res = await fetch(`${base}/fast`);
+  assert.equal(res.status, 200);
+  assert.equal(await res.text(), 'ok');
 
-const ac = new AbortController();
-const p = sleep(1000, { signal: ac.signal });
-const t1 = Date.now();
-ac.abort();
-await assert.rejects(p, { name: 'AbortError' });
-assert.ok(Date.now() - t1 < 100);
+  const t0 = Date.now();
+  res = await fetch(`${base}/slow`);
+  assert.equal(res.status, 503);
+  assert.deepEqual(await res.json(), { error: 'Request timed out' });
+  assert.ok(Date.now() - t0 < 300);
 
-await assert.rejects(sleep(10, { signal: AbortSignal.abort(new Error('already')) }), /already/);
+  res = await fetch(`${base}/boom`);
+  assert.equal(res.status, 500);
 
-const shared = new AbortController();
-await sleep(5, { signal: shared.signal });
-// Aborting after completion must not throw or reject anything.
-shared.abort();
+  const client = new AbortController();
+  setTimeout(() => client.abort(), 15);
+  await assert.rejects(fetch(`${base}/slow?gone`, { signal: client.signal }));
+  for (let i = 0; i < 20 && !seen.some((s) => s.includes('gone')); i++) await delay(5);
+
+  assert.ok(seen.some((s) => s.startsWith('/slow TimeoutError')));
+  assert.ok(seen.some((s) => s.startsWith('/slow?gone Error: Client disconnected')));
+  assert.ok(!seen.some((s) => s.startsWith('/fast'))); // a finished request is not aborted
+} finally {
+  server.closeAllConnections();
+  server.close();
+}
 ```
 
 </details>
@@ -3348,15 +3638,17 @@ assert.equal((await evensAsLines(1, 1000)).split('\n').length, 501);
 ---
 
 <a id="node-37"></a>
-### node-37. Count bytes and lines in a stream
+### node-37. Streaming file upload with a size limit
 
-*Streams · Easy*
+*Streams · Hard*
 
-Write `countStream(readable)` that resolves with `{ bytes, lines }` for a binary stream, where `lines` is the number of newline characters (like `wc -l`). Do not decode to strings and do not buffer the whole stream.
+Write `saveUpload(body, filePath, { maxBytes })` that streams a Readable (e.g. an HTTP request) to disk **without buffering it in memory**, and returns `{ bytes, sha256 }` computed on the way. If the body exceeds `maxBytes` or the stream fails, reject (status `413` for the size limit) and leave **no partial file**. Other readers must never see a half-written file.
+
+Then write `createUploadServer(dir, maxBytes)`: `PUT /files/:name` -> `201 { name, bytes, sha256 }`; a name that could escape `dir` -> `400`; a `Content-Length` over the limit -> `413` before reading the body.
 
 ```ts
-countStream(fs.createReadStream('data.txt')) // { bytes: 1048576, lines: 20000 }
-Readable.from([Buffer.from('a\nb'), Buffer.from('\n')]) -> { bytes: 4, lines: 2 }
+await saveUpload(req, '/data/report.csv', { maxBytes: 10_000_000 });
+// { bytes: 5321, sha256: '9f86d0...' }
 ```
 
 **Starter**
@@ -3364,9 +3656,8 @@ Readable.from([Buffer.from('a\nb'), Buffer.from('\n')]) -> { bytes: 4, lines: 2 
 ```ts
 import { Readable } from 'node:stream';
 
-export async function countStream(readable: Readable): Promise<{ bytes: number; lines: number }> {
-  // TODO
-  throw new Error('not implemented');
+export async function saveUpload(body: Readable, filePath: string, opts: { maxBytes: number }): Promise<{ bytes: number; sha256: string }> {
+  // TODO: pipeline(body, <count + hash + limit>, file)
 }
 ```
 
@@ -3374,55 +3665,122 @@ export async function countStream(readable: Readable): Promise<{ bytes: number; 
 <summary>Solution</summary>
 
 ```ts
-import { Readable } from 'node:stream';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { randomUUID, createHash } from 'node:crypto';
+import { rename, rm } from 'node:fs/promises';
+import { Transform, type Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
-const NEWLINE = 0x0a;
-
-export async function countStream(readable: Readable): Promise<{ bytes: number; lines: number }> {
-  let bytes = 0;
-  let lines = 0;
-  for await (const chunk of readable) {
-    const buf: Buffer = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
-    bytes += buf.length;
-    // indexOf on a Buffer scans natively, much faster than a JS loop.
-    let i = buf.indexOf(NEWLINE);
-    while (i !== -1) {
-      lines++;
-      i = buf.indexOf(NEWLINE, i + 1);
-    }
+export class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
   }
-  return { bytes, lines };
+}
+
+export async function saveUpload(body: Readable, filePath: string, { maxBytes }: { maxBytes: number }) {
+  const hash = createHash('sha256');
+  let bytes = 0;
+  const meter = new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      bytes += chunk.length;
+      if (bytes > maxBytes) return callback(new HttpError(413, `Upload exceeds ${maxBytes} bytes`));
+      hash.update(chunk);
+      callback(null, chunk);
+    },
+  });
+
+  // Write to a temp file in the same directory, then rename: rename is atomic on one file system.
+  const tmp = `${filePath}.${randomUUID()}.part`;
+  try {
+    await pipeline(body, meter, fs.createWriteStream(tmp, { flags: 'wx' }));
+    await rename(tmp, filePath);
+  } catch (err) {
+    await rm(tmp, { force: true });
+    throw err;
+  }
+  return { bytes, sha256: hash.digest('hex') };
+}
+
+export function createUploadServer(dir: string, maxBytes: number): http.Server {
+  return http.createServer(async (req, res) => {
+    const reply = (status: number, body: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(body));
+    };
+    try {
+      const match = /^\/files\/([^/]+)$/.exec(new URL(req.url ?? '/', 'http://x').pathname);
+      if (req.method !== 'PUT' || !match) throw new HttpError(404, 'Not found');
+      let name: string;
+      try {
+        name = decodeURIComponent(match[1]);
+      } catch {
+        throw new HttpError(400, 'Invalid file name');
+      }
+      // Allowlist the name: no slashes, no leading dot, so '../' can't escape dir.
+      if (!/^[\w-][\w.-]{0,100}$/.test(name)) throw new HttpError(400, 'Invalid file name');
+      if (Number(req.headers['content-length']) > maxBytes) throw new HttpError(413, 'Upload too large');
+
+      const result = await saveUpload(req, path.join(dir, name), { maxBytes });
+      reply(201, { name, ...result });
+    } catch (err) {
+      const status = err instanceof HttpError ? err.status : 500;
+      if (status === 413) res.setHeader('connection', 'close'); // don't read the rest of a huge body
+      // pipeline destroys req (and its socket) on failure; reply only if the socket is still usable.
+      if (!res.headersSent && !res.destroyed) reply(status, { error: status === 500 ? 'Upload failed' : (err as Error).message });
+    }
+  });
 }
 ```
 
-**Why it works.** Iterating a Readable with `for await` gives Buffer chunks and handles backpressure and errors (a stream error rejects the loop). Count `buf.length` for bytes, not string length: `'é'` is 1 character but 2 bytes. Newlines can be counted directly on bytes because `\n` (0x0a) never appears inside a multi-byte UTF-8 sequence, so no decoding is needed. Memory is one chunk at a time.
+**Why it works.** `pipeline(req, meter, fileStream)` moves the body chunk by chunk with backpressure, so memory stays at a few chunks whatever the file size. The `Transform` counts bytes, updates the hash and fails the pipeline once the limit is passed; `pipeline` then destroys every stream, and the `catch` deletes the temp file. Writing to a temp file and `rename`-ing it at the end means nobody ever reads a half-written file. Check `Content-Length` first to reject honest large uploads before reading anything, but still count bytes, because the header can be missing (chunked) or wrong. Trap: building the path from user input without an allowlist (`../../etc/passwd`).
 
-**Say it.** I iterate the stream's Buffer chunks, add their byte lengths, and count 0x0a bytes with Buffer.indexOf, which is safe for UTF-8 and never loads the whole file.
+**Say it.** I pipe the request through a Transform that counts bytes, hashes and enforces the limit into a temp file, rename it when the pipeline succeeds, and delete the temp file on any failure; the handler checks Content-Length early and allowlists the file name.
 
-**Follow-up.** Q: How would you add this as a pass-through step, e.g. to measure upload size while saving it? A: Use a Transform (or a generator stage in pipeline) that counts and re-yields each chunk, and abort when bytes exceed a limit.
+**Follow-up.** Q: How would you handle multipart form uploads or very large files in production? A: Parse `multipart/form-data` as a stream (busboy) instead of buffering it, and for large files skip your server entirely: give the client a presigned S3 URL (or multipart upload) so bytes go straight to storage, and process the file asynchronously from an S3 event.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import os from 'node:os';
+import { mkdtemp, readFile, readdir } from 'node:fs/promises';
+import { Readable as R } from 'node:stream';
+import type { AddressInfo } from 'node:net';
 
-assert.deepEqual(await countStream(Readable.from([Buffer.from('a\nb'), Buffer.from('\n')])), { bytes: 4, lines: 2 });
-assert.deepEqual(await countStream(Readable.from([Buffer.from('héllo')])), { bytes: 6, lines: 0 });
-assert.deepEqual(await countStream(Readable.from([])), { bytes: 0, lines: 0 });
-
-const dir = await mkdtemp(join(tmpdir(), 'wc-'));
+const dir = await mkdtemp(path.join(os.tmpdir(), 'upload-'));
+const server = createUploadServer(dir, 1000);
+await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 try {
-  const file = join(dir, 'data.txt');
-  await writeFile(file, 'x'.repeat(99) + '\n'.repeat(1) + 'line\n'.repeat(30_000));
-  assert.deepEqual(await countStream(createReadStream(file, { highWaterMark: 1000 })), { bytes: 100 + 150_000, lines: 30_001 });
+  let res = await fetch(`${base}/files/hello.txt`, { method: 'PUT', body: 'hello world' });
+  assert.equal(res.status, 201);
+  assert.deepEqual(await res.json(), {
+    name: 'hello.txt',
+    bytes: 11,
+    sha256: createHash('sha256').update('hello world').digest('hex'),
+  });
+  assert.equal(await readFile(path.join(dir, 'hello.txt'), 'utf8'), 'hello world');
+
+  res = await fetch(`${base}/files/big.bin`, { method: 'PUT', body: 'x'.repeat(2000) });
+  assert.equal(res.status, 413);
+  res = await fetch(`${base}/files/..%2Fevil`, { method: 'PUT', body: 'x' });
+  assert.equal(res.status, 400);
 } finally {
-  await rm(dir, { recursive: true, force: true });
+  server.closeAllConnections();
+  server.close();
 }
+
+// No Content-Length (a generator stream): the limit is enforced while streaming.
+const chunks = R.from([Buffer.alloc(600), Buffer.alloc(600)]);
+await assert.rejects(saveUpload(chunks, path.join(dir, 'chunked.bin'), { maxBytes: 1000 }), { status: 413 });
+const failing = R.from((async function* () { yield Buffer.from('partial'); throw new Error('client reset'); })());
+await assert.rejects(saveUpload(failing, path.join(dir, 'broken.bin'), { maxBytes: 1000 }), /client reset/);
+assert.deepEqual(await readdir(dir), ['hello.txt']); // no partial files left behind
 ```
 
 </details>
@@ -3432,17 +3790,20 @@ try {
 ---
 
 <a id="node-38"></a>
-### node-38. Minimal JSON API with node:http
+### node-38. REST endpoint with validation and cursor pagination
 
 *HTTP · Medium*
 
-Using only `node:http`, write `createApp()` returning a server with:
-- `GET /health` -> `200 {"ok":true}`
-- `POST /users` with JSON `{ "name": string }` -> `201` with `{ id, name }`
-- `GET /users/:id` -> the user or `404`
-- Invalid JSON or missing name -> `400`; body over 1 KB -> `413`; unknown route -> `404`.
+Using only `node:http`, write `createApp()` with an in-memory list of items:
 
-All responses are JSON.
+- `POST /items` with JSON `{ name: string (1-100 chars), price: integer >= 0 (cents), tags?: string[] }` -> `201` with `{ id, name, price, tags }`. Invalid input -> `400 { error: 'Validation failed', details: [{ field, message }] }` listing **every** problem (unknown fields too). Invalid JSON -> `400`; body over 10 KB -> `413`.
+- `GET /items?limit=&cursor=` -> `200 { data, nextCursor }`, oldest first. `limit` defaults to 10, must be 1-100. `nextCursor` is an opaque string, or `null` on the last page. Bad `limit` or `cursor` -> `400`.
+- Anything else -> `404`.
+
+```
+GET /items?limit=2          -> { data: [item1, item2], nextCursor: 'eyJhZnRlciI6Mn0' }
+GET /items?cursor=eyJhZn... -> { data: [item3], nextCursor: null }
+```
 
 **Starter**
 
@@ -3450,8 +3811,7 @@ All responses are JSON.
 import http from 'node:http';
 
 export function createApp(): http.Server {
-  // TODO
-  throw new Error('not implemented');
+  // TODO: readJson with a size limit, validate, paginate with a cursor
 }
 ```
 
@@ -3463,13 +3823,18 @@ import http from 'node:http';
 
 class HttpError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  details?: unknown;
+  constructor(status: number, message: string, details?: unknown) {
     super(message);
     this.status = status;
+    this.details = details;
   }
 }
 
-const MAX_BODY = 1024;
+type Item = { id: number; name: string; price: number; tags: string[] };
+type FieldError = { field: string; message: string };
+
+const MAX_BODY = 10 * 1024;
 
 async function readJson(req: http.IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
@@ -3486,38 +3851,69 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
   }
 }
 
+// Collect every problem instead of stopping at the first, so the client can fix them in one go.
+function validateNewItem(body: unknown): Omit<Item, 'id'> {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    throw new HttpError(400, 'Validation failed', [{ field: '(body)', message: 'must be a JSON object' }]);
+  }
+  const input = body as Record<string, unknown>;
+  const details: FieldError[] = [];
+  const name = typeof input.name === 'string' ? input.name.trim() : '';
+  if (name.length < 1 || name.length > 100) details.push({ field: 'name', message: 'must be a string of 1-100 characters' });
+  const price = input.price;
+  if (typeof price !== 'number' || !Number.isInteger(price) || price < 0) {
+    details.push({ field: 'price', message: 'must be a non-negative integer (cents)' });
+  }
+  const tags = input.tags ?? [];
+  if (!Array.isArray(tags) || !tags.every((t) => typeof t === 'string')) details.push({ field: 'tags', message: 'must be an array of strings' });
+  for (const key of Object.keys(input)) {
+    if (!['name', 'price', 'tags'].includes(key)) details.push({ field: key, message: 'is not allowed' });
+  }
+  if (details.length > 0) throw new HttpError(400, 'Validation failed', details);
+  return { name, price: price as number, tags: tags as string[] };
+}
+
+const encodeCursor = (afterId: number) => Buffer.from(JSON.stringify({ after: afterId })).toString('base64url');
+
+function decodeCursor(cursor: string): number {
+  try {
+    const { after } = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    if (Number.isInteger(after)) return after;
+  } catch {}
+  throw new HttpError(400, 'Invalid cursor');
+}
+
 function send(res: http.ServerResponse, status: number, body: unknown) {
   const json = JSON.stringify(body);
-  res.writeHead(status, {
-    'content-type': 'application/json',
-    'content-length': Buffer.byteLength(json),
-  });
+  res.writeHead(status, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(json) });
   res.end(json);
 }
 
 export function createApp(): http.Server {
-  const users = new Map<string, { id: string; name: string }>();
+  const items: Item[] = []; // ids only grow, so the array is already sorted by id
   let nextId = 1;
 
   async function route(req: http.IncomingMessage, res: http.ServerResponse) {
     const url = new URL(req.url ?? '/', 'http://localhost');
-    const userMatch = /^\/users\/([^/]+)$/.exec(url.pathname);
+    if (url.pathname !== '/items') throw new HttpError(404, 'Not found');
 
-    if (req.method === 'GET' && url.pathname === '/health') {
-      return send(res, 200, { ok: true });
+    if (req.method === 'POST') {
+      const item = { id: nextId++, ...validateNewItem(await readJson(req)) };
+      items.push(item);
+      return send(res, 201, item);
     }
-    if (req.method === 'POST' && url.pathname === '/users') {
-      const body = await readJson(req);
-      const name = (body as { name?: unknown } | null)?.name;
-      if (typeof name !== 'string' || !name.trim()) throw new HttpError(400, 'name is required');
-      const user = { id: String(nextId++), name: name.trim() };
-      users.set(user.id, user);
-      return send(res, 201, user);
-    }
-    if (req.method === 'GET' && userMatch) {
-      const user = users.get(decodeURIComponent(userMatch[1]));
-      if (!user) throw new HttpError(404, 'User not found');
-      return send(res, 200, user);
+    if (req.method === 'GET') {
+      const limitParam = url.searchParams.get('limit');
+      const limit = limitParam === null ? 10 : Number(limitParam);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new HttpError(400, 'limit must be an integer 1-100');
+      const cursor = url.searchParams.get('cursor');
+      const after = cursor === null ? 0 : decodeCursor(cursor);
+
+      // Keyset: start after the last id seen; fetch one extra row to know if there is a next page.
+      const page = items.filter((item) => item.id > after).slice(0, limit + 1);
+      const hasMore = page.length > limit;
+      const data = page.slice(0, limit);
+      return send(res, 200, { data, nextCursor: hasMore ? encodeCursor(data[data.length - 1].id) : null });
     }
     throw new HttpError(404, 'Not found');
   }
@@ -3525,21 +3921,20 @@ export function createApp(): http.Server {
   return http.createServer((req, res) => {
     route(req, res).catch((err) => {
       const status = err instanceof HttpError ? err.status : 500;
-      // Never leak internal error details on a 500.
-      const message = status === 500 ? 'Internal Server Error' : err.message;
+      const body = status === 500 ? { error: 'Internal Server Error' } : { error: err.message, ...(err.details ? { details: err.details } : {}) };
       if (status === 413) res.setHeader('connection', 'close');
-      if (!res.headersSent) send(res, status, { error: message });
+      if (!res.headersSent) send(res, status, body);
       else res.destroy();
     });
   });
 }
 ```
 
-**Why it works.** The request is a Readable, so the body is collected with `for await` while enforcing a size limit (otherwise a client can exhaust memory). Routing is a match on method plus path parsed with `URL`. A single `.catch` turns thrown `HttpError`s into JSON responses and everything else into a generic 500, so an async error never becomes an unhandled rejection or a hung request. Set `content-type` and `content-length` explicitly. Trap: forgetting to respond on an error path leaves the client waiting until it times out.
+**Why it works.** The body is read as a stream with a size cap, parsed in a try/catch, then validated into a typed object; unknown fields are rejected (mass-assignment protection) and every field error is returned at once. Pagination is keyset-based: the cursor encodes the last id returned, the next page is "id greater than that", and fetching `limit + 1` rows tells you whether another page exists without a count query. The cursor is base64url JSON so clients treat it as opaque, and a cursor or limit that doesn't parse is a 400, not a 500. All errors go through one `.catch`, which never leaks internals on a 500.
 
-**Say it.** I read the body as a stream with a size cap, parse JSON in a try/catch, route on method and pathname, and funnel every error through one catch that maps it to a status code.
+**Say it.** I stream the body with a size cap, validate into a typed object collecting every field error, and paginate by keyset: the opaque cursor holds the last id, and I fetch one extra row to know if there is a next page.
 
-**Follow-up.** Q: What is missing for production? A: Validation with a schema (zod), request timeouts (`server.requestTimeout`, `headersTimeout`), auth, structured logging with request ids, graceful shutdown, and a persistent store instead of a Map.
+**Follow-up.** Q: How does this map to SQL, and why not offset pagination? A: `SELECT ... WHERE id > $after ORDER BY id LIMIT $limit + 1` uses the primary key index, so every page costs the same; `OFFSET 10000` scans and discards 10 000 rows, and rows inserted between requests shift pages (duplicates or skips). For a non-unique sort like `created_at`, add the id as a tiebreaker and put both in the cursor. 400 vs 422 for validation is a team convention; be consistent.
 
 <details>
 <summary>Tests</summary>
@@ -3551,23 +3946,31 @@ import type { AddressInfo } from 'node:net';
 const server = createApp();
 await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+const post = (body: string) => fetch(`${base}/items`, { method: 'POST', headers: { 'content-type': 'application/json' }, body });
 try {
-  let res = await fetch(`${base}/health`);
-  assert.equal(res.status, 200);
-  assert.deepEqual(await res.json(), { ok: true });
-
-  res = await fetch(`${base}/users`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Ann' }) });
+  let res = await post(JSON.stringify({ name: ' Pen ', price: 150 }));
   assert.equal(res.status, 201);
-  const created = await res.json();
-  assert.deepEqual(created, { id: '1', name: 'Ann' });
+  assert.deepEqual(await res.json(), { id: 1, name: 'Pen', price: 150, tags: [] });
+  await post(JSON.stringify({ name: 'Book', price: 1299, tags: ['paper'] }));
+  await post(JSON.stringify({ name: 'Mug', price: 0 }));
 
-  res = await fetch(`${base}/users/1`);
-  assert.deepEqual(await res.json(), created);
-  assert.equal((await fetch(`${base}/users/42`)).status, 404);
+  res = await post(JSON.stringify({ name: '', price: 1.5, admin: true }));
+  assert.equal(res.status, 400);
+  const bad = await res.json();
+  assert.equal(bad.error, 'Validation failed');
+  assert.deepEqual(bad.details.map((d: { field: string }) => d.field), ['name', 'price', 'admin']);
+  assert.equal((await post('{oops')).status, 400);
+  assert.equal((await post(JSON.stringify({ name: 'x'.repeat(11_000), price: 1 }))).status, 413);
 
-  assert.equal((await fetch(`${base}/users`, { method: 'POST', body: '{bad' })).status, 400);
-  assert.equal((await fetch(`${base}/users`, { method: 'POST', body: '{}' })).status, 400);
-  assert.equal((await fetch(`${base}/users`, { method: 'POST', body: JSON.stringify({ name: 'x'.repeat(2000) }) })).status, 413);
+  res = await fetch(`${base}/items?limit=2`);
+  const page1 = await res.json();
+  assert.deepEqual(page1.data.map((i: { name: string }) => i.name), ['Pen', 'Book']);
+  assert.equal(typeof page1.nextCursor, 'string');
+  const page2 = await (await fetch(`${base}/items?limit=2&cursor=${page1.nextCursor}`)).json();
+  assert.deepEqual(page2, { data: [{ id: 3, name: 'Mug', price: 0, tags: [] }], nextCursor: null });
+
+  assert.equal((await fetch(`${base}/items?limit=0`)).status, 400);
+  assert.equal((await fetch(`${base}/items?cursor=garbage`)).status, 400);
   assert.equal((await fetch(`${base}/nope`)).status, 404);
 } finally {
   server.closeAllConnections();
@@ -4524,30 +4927,34 @@ try {
 ---
 
 <a id="node-47"></a>
-### node-47. Base64, base64url and decoding a JWT payload
+### node-47. Sign and verify a JWT (HS256) and an auth middleware
 
-*Buffer · Easy*
+*Security · Medium*
 
-1. Implement `toBase64Url(input)` and `fromBase64Url(str)` yourself on top of standard base64 (do not use the `'base64url'` encoding).
-2. Implement `decodeJwtPayload(token)` that returns the parsed JSON payload of a JWT (no signature check).
+Using only `node:crypto`, write:
+
+- `signJwt(payload, secret, { expiresInSec })` -> an HS256 token `header.payload.signature` (base64url), with `iat` and `exp` claims
+- `verifyJwt(token, secret)` -> the claims, or throw `AuthError` if the token is malformed, the algorithm is not `HS256` (including `none`), the signature is wrong, or it is expired / not yet valid (allow 5 s clock skew)
+- `requireAuth(secret)`: Express-style middleware that reads `Authorization: Bearer <token>`, sets `req.user` to the claims and calls `next()`, or responds `401` with a `WWW-Authenticate` header
 
 ```ts
-toBase64Url('hello?>')            // 'aGVsbG8_Pg'   (base64 is 'aGVsbG8/Pg==')
-fromBase64Url('aGVsbG8_Pg').toString() // 'hello?>'
-decodeJwtPayload('xxx.eyJzdWIiOiIxMjMifQ.yyy') // { sub: '123' }
+const token = signJwt({ sub: 'u1', role: 'admin' }, secret, { expiresInSec: 900 });
+verifyJwt(token, secret)  // { sub: 'u1', role: 'admin', iat: ..., exp: ... }
 ```
 
 **Starter**
 
 ```ts
-export function toBase64Url(input: string | Buffer): string {
-  throw new Error('not implemented');
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+export class AuthError extends Error {}
+
+export function signJwt(payload: Record<string, unknown>, secret: string, opts: { expiresInSec: number }): string {
+  // TODO
 }
-export function fromBase64Url(str: string): Buffer {
-  throw new Error('not implemented');
-}
-export function decodeJwtPayload(token: string): unknown {
-  throw new Error('not implemented');
+
+export function verifyJwt(token: string, secret: string): Record<string, unknown> {
+  // TODO
 }
 ```
 
@@ -4555,32 +4962,83 @@ export function decodeJwtPayload(token: string): unknown {
 <summary>Solution</summary>
 
 ```ts
-export function toBase64Url(input: string | Buffer): string {
-  return Buffer.from(input) // strings are encoded as UTF-8
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+export class AuthError extends Error {}
+
+type Claims = Record<string, unknown> & { exp?: number; nbf?: number; iat?: number };
+
+const b64url = (text: string) => Buffer.from(text, 'utf8').toString('base64url');
+const hmac = (data: string, secret: string) => createHmac('sha256', secret).update(data).digest();
+
+function parseJsonPart(part: string): Record<string, unknown> {
+  try {
+    const value = JSON.parse(Buffer.from(part, 'base64url').toString('utf8'));
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) return value;
+  } catch {}
+  throw new AuthError('Malformed token');
 }
 
-export function fromBase64Url(str: string): Buffer {
-  const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-  return Buffer.from(padded, 'base64');
+export function signJwt(payload: Record<string, unknown>, secret: string, opts: { expiresInSec: number; now?: number }): string {
+  const iat = Math.floor((opts.now ?? Date.now()) / 1000);
+  const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body = b64url(JSON.stringify({ ...payload, iat, exp: iat + opts.expiresInSec }));
+  return `${header}.${body}.${hmac(`${header}.${body}`, secret).toString('base64url')}`;
 }
 
-export function decodeJwtPayload(token: string): unknown {
+export function verifyJwt(token: string, secret: string, opts: { now?: number; clockSkewSec?: number } = {}): Claims {
   const parts = token.split('.');
-  if (parts.length !== 3) throw new Error('Invalid JWT: expected 3 parts');
-  return JSON.parse(fromBase64Url(parts[1]).toString('utf8'));
+  if (parts.length !== 3) throw new AuthError('Malformed token');
+  const [header, body, signature] = parts;
+
+  // Pin the algorithm: never let the token choose it ('none', or HS256 keyed with an RSA public key).
+  if (parseJsonPart(header).alg !== 'HS256') throw new AuthError('Unexpected algorithm');
+
+  const expected = hmac(`${header}.${body}`, secret);
+  const actual = Buffer.from(signature, 'base64url');
+  // timingSafeEqual throws on different lengths, so check the length first.
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) throw new AuthError('Invalid signature');
+
+  // Only now is the payload trusted.
+  const claims: Claims = parseJsonPart(body);
+  const now = Math.floor((opts.now ?? Date.now()) / 1000);
+  const skew = opts.clockSkewSec ?? 5;
+  if (typeof claims.exp !== 'number' || now > claims.exp + skew) throw new AuthError('Token expired');
+  if (typeof claims.nbf === 'number' && now + skew < claims.nbf) throw new AuthError('Token not active yet');
+  return claims;
+}
+
+type Req = { headers: Record<string, string | string[] | undefined>; user?: Claims };
+type Res = { statusCode: number; setHeader(name: string, value: string): unknown; end(body?: string): unknown };
+
+export function requireAuth(secret: string) {
+  return (req: Req, res: Res, next: (err?: unknown) => void): void => {
+    const header = req.headers.authorization;
+    const match = typeof header === 'string' ? /^Bearer\s+(\S+)$/i.exec(header) : null;
+    if (!match) return deny(res);
+    try {
+      req.user = verifyJwt(match[1], secret);
+    } catch (err) {
+      if (err instanceof AuthError) return deny(res);
+      return next(err); // a bug, not a bad token: let the error handler log it
+    }
+    next();
+  };
+}
+
+function deny(res: Res) {
+  res.statusCode = 401;
+  res.setHeader('www-authenticate', 'Bearer error="invalid_token"');
+  res.setHeader('content-type', 'application/json');
+  res.end(JSON.stringify({ error: 'Unauthorized' })); // don't tell the client which check failed
 }
 ```
 
-**Why it works.** Base64 encodes every 3 bytes as 4 characters from `A-Z a-z 0-9 + /`, padding with `=`. Base64url swaps `+` and `/` for URL-safe `-` and `_` and drops padding, which is why JWTs and many tokens use it. Decoding reverses the swap and restores padding to a multiple of 4. Always go through Buffer with an explicit encoding: `btoa` only handles Latin-1, so emoji or Cyrillic break it. Decoding a JWT payload is not verification: never trust its claims without checking the signature.
+**Why it works.** An HS256 JWT is `base64url(header).base64url(payload)` plus an HMAC-SHA256 of exactly that string, so verifying means recomputing the HMAC and comparing it in constant time with `timingSafeEqual` (`===` leaks how many leading bytes matched). The algorithm is pinned by the server, never taken from the header, which blocks `alg: none` and algorithm-confusion attacks. Claims are checked only after the signature: `exp` must exist, and a few seconds of skew tolerate clock drift between servers. The middleware answers 401 for any token problem without saying which check failed, and passes unexpected errors to `next(err)`. 401 means "not authenticated"; 403 is for an authenticated user without permission.
 
-**Say it.** I base64-encode the UTF-8 bytes, swap plus and slash for dash and underscore and strip padding; decoding reverses that and re-pads to a multiple of four.
+**Say it.** I split the token, pin the algorithm, recompute the HMAC over header.payload and compare it with timingSafeEqual, and only then parse and check exp and nbf with a small skew; the middleware turns any failure into a 401 and attaches the claims to req.user.
 
-**Follow-up.** Q: Node already supports `'base64url'`, so when would you write this? A: You wouldn't in Node (use `buf.toString('base64url')`); but you'd need it in environments without it, and interviewers use it to check you understand the encoding and padding.
+**Follow-up.** Q: Why do most systems use RS256/ES256 instead of HS256? A: With HS256 every service that verifies tokens holds the secret and can also mint them. With RS256/ES256 only the issuer has the private key; services verify with public keys fetched from a JWKS endpoint (cached, selected by `kid`), which also makes key rotation possible. In production use a library like `jose` with an explicit algorithm list, issuer and audience.
 
 <details>
 <summary>Tests</summary>
@@ -4588,19 +5046,43 @@ export function decodeJwtPayload(token: string): unknown {
 ```ts
 import assert from 'node:assert/strict';
 
-assert.equal(toBase64Url('hello?>'), 'aGVsbG8_Pg');
-assert.equal(fromBase64Url('aGVsbG8_Pg').toString(), 'hello?>');
-for (const s of ['', 'a', 'ab', 'abc', 'Привіт 👋', 'ÿþ']) {
-  assert.equal(toBase64Url(s), Buffer.from(s).toString('base64url'));
-  assert.equal(fromBase64Url(toBase64Url(s)).toString(), s);
-}
-const bin = Buffer.from([0xfb, 0xff, 0xbf]);
-assert.equal(toBase64Url(bin), '-_-_');
-assert.deepEqual(fromBase64Url('-_-_'), bin);
+const secret = 's3cret-with-enough-entropy';
+const token = signJwt({ sub: 'u1', role: 'user' }, secret, { expiresInSec: 60 });
+const claims = verifyJwt(token, secret);
+assert.equal(claims.sub, 'u1');
+assert.equal((claims.exp as number) - (claims.iat as number), 60);
 
-const token = ['{"alg":"HS256"}', '{"sub":"123","name":"Анна"}'].map((p) => toBase64Url(p)).join('.') + '.sig';
-assert.deepEqual(decodeJwtPayload(token), { sub: '123', name: 'Анна' });
-assert.throws(() => decodeJwtPayload('not-a-jwt'), /3 parts/);
+// Signed, not encrypted: anyone can read the payload.
+assert.equal(JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')).role, 'user');
+
+const [h, , s] = token.split('.');
+const forged = `${h}.${Buffer.from(JSON.stringify({ sub: 'u1', role: 'admin', exp: 9e9 })).toString('base64url')}.${s}`;
+assert.throws(() => verifyJwt(forged, secret), { message: 'Invalid signature' });
+assert.throws(() => verifyJwt(token, 'other-secret'), AuthError);
+const none = `${Buffer.from('{"alg":"none"}').toString('base64url')}.${token.split('.')[1]}.`;
+assert.throws(() => verifyJwt(none, secret), { message: 'Unexpected algorithm' });
+const old = signJwt({ sub: 'u1' }, secret, { expiresInSec: 60, now: Date.now() - 120_000 });
+assert.throws(() => verifyJwt(old, secret), { message: 'Token expired' });
+assert.throws(() => verifyJwt('not-a-jwt', secret), { message: 'Malformed token' });
+
+const auth = requireAuth(secret);
+const fakeRes = () => {
+  const res = { statusCode: 200, headers: {} as Record<string, string>, body: '', setHeader(n: string, v: string) { res.headers[n] = v; }, end(b = '') { res.body = b; } };
+  return res;
+};
+
+const req: { headers: Record<string, string>; user?: Record<string, unknown> } = { headers: { authorization: `Bearer ${token}` } };
+let nextCalled = false;
+auth(req, fakeRes(), () => { nextCalled = true; });
+assert.ok(nextCalled);
+assert.equal(req.user?.sub, 'u1');
+
+for (const headers of [{}, { authorization: 'Basic abc' }, { authorization: `Bearer ${forged}` }]) {
+  const res = fakeRes();
+  auth({ headers }, res, () => assert.fail('next must not be called'));
+  assert.equal(res.statusCode, 401);
+  assert.match(res.headers['www-authenticate'], /^Bearer/);
+}
 ```
 
 </details>

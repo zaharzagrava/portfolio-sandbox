@@ -111,8 +111,8 @@ arr.at(-1);                              // last element
 
 | Week | Focus | Problems/day |
 |---|---|---|
-| 1 | arrays, hashing, two pointers, sliding window, prefix sums, stack | 2–3 |
-| 2 | binary search, heap, intervals, linked lists, trees (DFS/BFS) | 2–3 |
+| 1 | arrays, hashing, two pointers, sliding window, prefix sums, matrices, stack | 2–3 |
+| 2 | binary search, heap, intervals, linked lists, trees (DFS/BFS, build and serialize) | 2–3 |
 | 3 | **DP** (1D → 2D → knapsack → strings), backtracking, greedy | 2 |
 | 4 | graphs (BFS, topo sort, union-find, Dijkstra), tries, bit tricks, LRU, mixed timed mocks | 2 + 2 mocks |
 

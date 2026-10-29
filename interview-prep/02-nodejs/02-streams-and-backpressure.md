@@ -113,6 +113,8 @@ await new Upload({ client: s3, params: { Bucket, Key, Body: req } }).done(); // 
 ```
 Better still: the client uploads straight to S3 with a **presigned URL** or presigned POST, so the bytes never pass through your service.
 
+Saving to local disk follows the same rule: `pipeline(req, meter, fs.createWriteStream(tmpPath))`, where `meter` is a `Transform` that counts bytes, updates a hash and fails the pipeline once the size limit is passed. Check `Content-Length` first to reject large uploads early, but still count, because the header can be missing (chunked) or wrong. Write to a temp file and `rename` it on success (atomic on one file system), so nobody reads a half-written file; on failure `pipeline` destroys every stream and you delete the temp file. Allowlist the file name, or `../` escapes the upload directory. Drill: [node-37](../practice/live-coding/02-nodejs.md#node-37).
+
 <!-- theory-links:start -->
 > [!TIP] In this codebase
 > - [`S3ObjectStorage`](../../packages/backend/libs/infrastructure/storage/s3-object-storage.ts#L21): S3ObjectStorage supports presigned POST and multipart uploads, so clients can upload directly to S3. _(s3-object-storage.ts)_
@@ -131,7 +133,7 @@ Better still: the client uploads straight to S3 with a **presigned URL** or pres
 - Small buffers come out of a shared 8 KiB pool. Slicing (`buf.subarray`) **shares memory**: holding a tiny slice keeps the whole parent alive, which can leak.
 - String ↔ Buffer conversions need an explicit encoding (`utf8`, `base64`, `hex`). Watch out for multibyte characters split across chunks; use `StringDecoder` or `setEncoding('utf8')`.
 - Bytes ≠ characters: `'é'.length` is 1 but `Buffer.byteLength('é')` is 2. Use `buf.length` for sizes and `Content-Length`.
-- **Base64** encodes every 3 bytes as 4 characters from `A–Z a–z 0–9 + /`, padded with `=` to a multiple of 4. **Base64url** replaces `+ /` with the URL-safe `- _` and drops the padding; JWTs and many tokens use it. Node supports both: `buf.toString('base64url')`, `Buffer.from(s, 'base64url')`. By hand: swap the characters back and pad to a multiple of 4 before decoding. Avoid `btoa`/`atob` for text: they only handle Latin-1, so emoji or Cyrillic break. Drill: [node-47](../practice/live-coding/02-nodejs.md#node-47).
+- **Base64** encodes every 3 bytes as 4 characters from `A–Z a–z 0–9 + /`, padded with `=` to a multiple of 4. **Base64url** replaces `+ /` with the URL-safe `- _` and drops the padding; JWTs and many tokens use it. Node supports both: `buf.toString('base64url')`, `Buffer.from(s, 'base64url')`. By hand: swap the characters back and pad to a multiple of 4 before decoding. Avoid `btoa`/`atob` for text: they only handle Latin-1, so emoji or Cyrillic break. Drill (base64url inside a JWT): [node-47](../practice/live-coding/02-nodejs.md#node-47).
 
 ---
 
@@ -220,7 +222,7 @@ A `Readable` stream starts in **paused mode**. It switches to **flowing mode** (
 
 Every Readable is an async iterable. `for await (const chunk of stream)` reads one chunk at a time with backpressure, and a stream error rejects the loop. (Async generators themselves: [async patterns §10](../01-javascript-typescript/04-fetch-axios-async.md#10-async-generators-and-for-await).)
 
-- **Counting bytes and lines**: add `chunk.length` for bytes; count `0x0a` bytes for lines. No decoding needed, because the byte `\n` never appears inside a multi-byte UTF-8 sequence. Drill: [node-37](../practice/live-coding/02-nodejs.md#node-37).
+- **Counting bytes and lines**: add `chunk.length` for bytes; count `0x0a` bytes for lines. No decoding needed, because the byte `\n` never appears inside a multi-byte UTF-8 sequence.
 - **Line by line** (logs, CSV): `fs.readFile` loads the whole file; `readline` over a read stream keeps memory at about one chunk plus the current line, and handles lines that span chunks. It accepts any Readable (file, HTTP request, S3 object).
   ```js
   const rl = readline.createInterface({ input: fs.createReadStream(path), crlfDelay: Infinity }); // \r\n = one break

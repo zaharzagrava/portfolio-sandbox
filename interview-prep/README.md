@@ -42,6 +42,8 @@ Many sections also carry an **In this codebase** block that links the idea to th
 - [02 Transactions, isolation, locking](03-databases/02-transactions-isolation-locking.md)
 - [03 Schema, zero-downtime migrations, scaling](03-databases/03-schema-migrations-and-scaling.md): pooling, replicas, partitioning, temporal/bitemporal data
 - [04 Redis & caching](03-databases/04-redis-and-caching.md)
+- [05 Analytical & document databases](03-databases/05-analytical-and-document-databases.md): OLTP vs OLAP, row vs columnar; ClickHouse, Redshift, Snowflake, MongoDB: when to pick each, pricing shapes, where they fit in the practice tasks
+- [06 Database throughput & costs](03-databases/06-database-throughput-and-costs.md): what one Postgres primary really takes (commit-per-row vs batched vs COPY), DynamoDB/Redis/Scylla/Mongo/OpenSearch/ClickHouse/warehouse limits, AWS prices, chat-app worked example
 
 ### 04: API Design
 - [01 REST design & chatty APIs](04-api-design/01-rest-design-and-chatty-apis.md): HTTP/1.1 vs HTTP/2 vs HTTP/3 (multiplexing, HOL blocking, header compression), SSE vs WebSockets, aggregation strategies
@@ -89,13 +91,15 @@ Many sections also carry an **In this codebase** block that links the idea to th
 - [01 Coding interview process](11-algorithms-coding/01-coding-interview-process.md)
 - [02 Dynamic programming](11-algorithms-coding/02-dynamic-programming.md)
 - [03 Patterns cheat sheet](11-algorithms-coding/03-patterns-cheatsheet.md)
+- [04 Pattern Map](11-algorithms-coding/04-pattern-map.md): how to find the pattern: brute force → repeated work → what to remember, constraints → complexity, input/wording signals, DP vs greedy vs backtracking, invariants, all 100 drills reasoned out
 
 ### 12: Domain: rental payments
 - [01 PMS and rent payments](12-domain-rental-payments/01-pms-and-rent-payments.md): what a PMS is, who's who (owner, property manager, PMS vendor, tenant), money flow, why rent fintechs exist, questions to ask
 
 ### Practice: rehearsal answers (one question = one file: landed design + spoken script + follow-up drill)
 - [01 PMS integration](practice/01-pms-webhook-ingestion.md): reliable webhook ingestion (dedupe, strict per-account ordering, gaps, downtime, audit) + structure for many PMSs (ports & adapters, canonical model, mapping, isolation, workers and side effects)
-- [Architecture tasks (50)](practice/architecture/README.md): one file per task (question, then folded model answer: clarify, design, deep dives, traps, 60–90 s spoken script, follow-ups). Payments (ACH, cards, payouts, ledger, reconciliation, disputes), integrations (open banking, polling PMS, outbound webhooks), data (migrations, multi-tenancy, search, reporting), reliability, security, debugging.
+- [System design / architecture (50)](practice/system-design/README.md): one file per task (question, then folded model answer: clarify, design, deep dives, traps, 60–90 s spoken script, follow-ups). Classic designs (URL shortener, feed, chat, video, ride-hailing, ticketing, flash sale, payments, ledger, AI/RAG…), everyday backend scenarios (idempotency, outbox, sagas, migrations, multi-tenancy, caching, jobs, auth, DR, feature flags…) and debugging cases. Domains vary on purpose.
+- [Fintech pack (20, bonus)](practice/fintech-pack/README.md): payments / rental-fintech tasks (ACH, payouts, autopay, KYC, fraud, disputes, PCI, money). `practice/architecture/` is the superseded first version and can be deleted.
 
 **Daily session** (in the drills page): 1 TypeScript → 1 Node.js → 2 Algorithms → 1 Architecture, looping until each is marked "got it". Timebox: 10–15 min TS/Node, 25 min per algorithm (brute force by minute 15 if stuck), 30 min architecture out loud.
 
@@ -121,4 +125,4 @@ Many sections also carry an **In this codebase** block that links the idea to th
 ## Notes on using these docs
 
 - **Version-specific details** (Next.js 15/16, React 19, Node 24) are flagged in the docs as fast-moving. Check them against the version you actually use.
-- **Algorithm code is tested.** Every algorithm snippet was run on Node 24, and the DP solutions were checked against brute force on random inputs. Node's built-in TypeScript support rejects TS constructor shortcuts like `constructor(private x)`, so the templates avoid them, which helps if you run `practice.ts` with plain `node`.
+- **Algorithm code is tested.** Every algorithm snippet was run on Node 22+, and the DP solutions were checked against brute force on random inputs. Node's built-in TypeScript support rejects TS constructor shortcuts like `constructor(private x)`, so the templates avoid them, which helps if you run `practice.ts` with plain `node`.

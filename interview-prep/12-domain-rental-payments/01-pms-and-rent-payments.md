@@ -50,3 +50,34 @@ Some do (AppFolio and Yardi have their own payment products), so a rent fintech 
 - "How do you position against the PMSs' built-in payments, and which PMS integrations matter most?"
 - "Do most PMS partners give you webhooks with sequence numbers, or do you mostly poll?"
 - "How is a new customer onboarded today, and where does it take the longest?"
+
+---
+
+## 5. Open banking basics
+
+**What it is.** Regulation forces banks to give licensed third parties API access to a customer's account, **only with that customer's consent**. EU/UK: PSD2 (UK: Open Banking standard); Israel: Bank of Israel open-banking directive. Before it, apps used screen scraping with the user's bank password; open banking replaces that with tokens and the password never leaves the bank.
+
+**Two kinds of access**
+| | AIS (account information) | PIS (payment initiation) |
+|---|---|---|
+| Does | read: account holder name, account number/IBAN, balance, transactions | start a bank transfer from the user's account |
+| Consent | ongoing, with an **expiry** (length set by regulator/bank; EU allows up to 180 days between re-authentications via a provider, UK uses 90-day reconfirmation; check the regime) | per payment (or a mandate for recurring) |
+| Rent use | verify account ownership, balance check before a debit, match transfers to rent | pay rent as an instant bank transfer |
+
+**Aggregators.** Nobody integrates hundreds of banks one by one. Providers like **Plaid, TrueLayer, Tink, Salt Edge** (plus local Israeli ones) give one API across many banks. You talk to the aggregator; it talks to the banks.
+
+**Consent flow (standard OAuth shape)**
+1. Your app asks the aggregator for a link session → user is redirected to the aggregator/bank UI.
+2. User logs in **at the bank**, sees what is requested (accounts, data types, duration), approves.
+3. Bank/aggregator redirects the **browser** back to your redirect URL with a **one-time code** (short-lived, single use). This is a redirect, not a webhook: the code arrives via the user's browser, so it carries no secret. Your backend exchanges it server-to-server, using your client secret, for tokens / a connection id. The browser never sees the tokens.
+4. Your backend calls the data APIs with that token. Many providers also send **webhooks** ("new transactions available", "consent expiring", "login required").
+
+**Tokens vs consent.** Two different clocks:
+- **Access token**: short-lived (minutes–hours). Renewed with a **refresh token** (some providers rotate it: each refresh token works once), or the aggregator manages tokens and hands you a long-lived connection token.
+- **Consent**: the user's permission; ends at its expiry or when the user revokes it at the bank. Refreshing a token can't extend it; only the user can, by re-consenting.
+- **Open-banking consent ≠ debit authorization.** A bank debit (ACH / direct debit) runs on the account number plus the tenant's signed debit authorization (mandate), through the payment provider. It doesn't use the open-banking token. So when AIS consent expires you lose reads (ownership check, balance check, transaction matching), not the ability to collect rent, as long as the debit flow was never built to depend on the token.
+
+**Data quirks**
+- Transactions arrive as **pending**, later **posted**; some banks give the posted one a **new ID**.
+- History depth on first link differs by bank (roughly 90 days to 24 months).
+- Bank APIs are slow and flaky; balances can be cached or stale.

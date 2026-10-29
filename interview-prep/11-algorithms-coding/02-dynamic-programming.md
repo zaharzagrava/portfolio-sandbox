@@ -140,7 +140,7 @@ function robTree(root?: TreeNode): number {
 ### Variant F: "Delete and Earn" reduces to the same problem
 Taking value v deletes v−1 and v+1. Bucket the points per value (`points[v] = v × count(v)`), then run `rob(points)`, because adjacent *values* behave like adjacent indices.
 
-Drills: [algo-082](../practice/live-coding/03-algorithms.md#algo-082), [algo-083](../practice/live-coding/03-algorithms.md#algo-083) (Variant C)
+Drills: [algo-082](../practice/live-coding/03-algorithms.md#algo-082) (its follow-up is Variant C)
 
 ---
 
@@ -307,13 +307,14 @@ function maxProfitCooldown(prices: number[]): number {
 }
 ```
 One state variable per situation (holding / not holding / cooling down), all updated per day from the previous day's values. Transaction fee: `cash = max(cash, hold + p − fee)`, `hold = max(hold, cash − p)`. With no fee and no cooldown the DP collapses to the greedy "sum every rise".
-Drills: [algo-095](../practice/live-coding/03-algorithms.md#algo-095) (and [algo-016](../practice/live-coding/03-algorithms.md#algo-016), the one-transaction case, is a running minimum)
+Drills: [algo-016](../practice/live-coding/03-algorithms.md#algo-016) (the one-transaction case is a running minimum; its follow-up is the unlimited-trades case)
 
 ### 3.7 Others to recognize
-- **Interval DP**: `dp[i][j]` over subarrays (burst balloons, matrix chain, palindrome partitioning). O(n³).
+- **Interval DP**: `dp[i][j]` over subarrays (burst balloons, matrix chain, palindrome partitioning). O(n³). Palindromic substrings fit `pal[i][j] = s[i] === s[j] && pal[i + 1][j − 1]` (O(n²) space), but expanding around each center gives the same O(n²) time in O(1) space. Drills: [algo-050](../practice/live-coding/03-algorithms.md#algo-050) (template in the cheat sheet, Two pointers)
 - **Bitmask DP**: n ≤ 20, `dp[mask]` over subsets (TSP, assignment).
-- **Tree DP**: return tuples from children (House Robber III, diameter, max path sum). Drills: [algo-059](../practice/live-coding/03-algorithms.md#algo-059)
-- **DP over integers**: `bits[i] = bits[i >> 1] + (i & 1)` reuses i without its last bit. Drills: [algo-099](../practice/live-coding/03-algorithms.md#algo-099)
+- **Tree DP**: return tuples from children (House Robber III, diameter, max path sum). Drills: [algo-059](../practice/live-coding/03-algorithms.md#algo-059), [algo-094](../practice/live-coding/03-algorithms.md#algo-094)
+- **DP on a DAG (memoized DFS)**: when moves cannot form a cycle (every step strictly increases), the best answer from a node never depends on the path that reached it, so cache it per node: O(V + E). Longest increasing path in a matrix. Drills: [algo-080](../practice/live-coding/03-algorithms.md#algo-080) (template in the cheat sheet, Graph traversal)
+- **DP over integers**: `bits[i] = bits[i >> 1] + (i & 1)` reuses i without its last bit (counting bits).
 - **Digit DP**: counting numbers with properties up to N.
 
 ---

@@ -12,7 +12,25 @@ Redis data structures, caching patterns, failure modes, locks, and rate limiting
   - **AOF**: append-only log, `appendfsync everysec` loses at most about 1 s. AOF rewrite compacts the log.
   - Both together is common.
 - **Replication** is async, so a failover can lose acknowledged writes. `WAIT numreplicas timeout` narrows the window but doesn't give you strong consistency.
+  - Step by step: client sends `INCR` → primary applies it and **replies "OK, 51" immediately** → it ships the write to the replica in the background, a few ms later. If the primary dies in between, the replica never got that write; when the replica is promoted, the counter is 50 again. The client was told 51; that write is simply gone.
+  - Fine for caches and rate limiters (a few lost increments = a few extra requests allowed). Not fine for anything that must not be lost: money, billing, orders → a durable DB or stream.
 - **Sentinel**: HA for a single primary (failover). **Cluster**: sharding across 16,384 hash slots. Multi-key operations need all keys in the same slot, which you force with **hash tags**: `{user:42}:cart`, `{user:42}:profile`.
+  - **Hash tag example** (slots computed with Redis's CRC16): `rl:agency42:bucket` → slot 7512, `quota:agency42:2026-10-28` → slot 4584 (different slots, likely different nodes: one script can't touch both). `rl:{agency42}:bucket` and `quota:{agency42}:2026-10-28` → both slot 12687, because only `agency42` is hashed. Cost: all of one agency's keys live on one node (fine unless one agency is huge).
+  - **Cluster in practice**: several primaries, each owning a range of the 16,384 slots, each with replicas. A key's slot = `CRC16(key) % 16384`; if the key contains `{…}`, only the part inside the braces is hashed. Clients (ioredis `Cluster`) keep the slot → node map and send each command straight to the owning node. You scale throughput and memory by adding primaries and moving slots. A command, `MULTI` or Lua script can only touch keys in **one** slot (`CROSSSLOT` error otherwise), hence hash tags.
+
+**Atomicity toolkit** (what to use when several pods update the same key):
+| Need | Tool | Note |
+|---|---|---|
+| increment and read the result | `INCR key` / `INCRBY key n` / `HINCRBY` | one atomic step, **returns the new value**: "increment, then compare" has no race. A missing key counts as 0 |
+| expire a key | `EXPIRE key secs` / `PEXPIRE` | separate command: if the process dies between `INCR` and `EXPIRE`, the key never expires. Use `EXPIRE key secs NX` (only if no TTL yet, Redis 7+) or put both in Lua/`MULTI` |
+| create only if absent (lock, idempotency key) | `SET key val NX EX secs` | one atomic step |
+| read and delete in one step | `GETDEL key` (6.2+) | nobody can increment between the read and the delete; older: `GETSET key 0` |
+| several writes all-or-nothing | `MULTI … EXEC` | commands are queued and run together, no other client interleaves; **no rollback** if one fails, and you **can't read a value mid-transaction** to decide the next write |
+| read, decide, write (read-modify-write) | **Lua script** (`EVAL`, or Functions in Redis 7) | the whole script runs as one atomic step, so it can read, compute and write. Keep it short (it blocks everyone); use `redis.call('TIME')` for one clock |
+| optimistic check-and-set | `WATCH key` + `MULTI/EXEC` | `EXEC` fails if the key changed since `WATCH`; you retry. Lua is usually simpler |
+| fewer round trips | pipeline | batching only, **not** atomic |
+
+Redis has **no default TTL** setting for keys. `maxmemory-policy` (§5) evicts keys only when memory is full, and `allkeys-*` policies can evict keys you still need, so it's not a substitute. For "INCR + set TTL" without a gap use `MULTI` / `INCR` / `EXPIRE` / `EXEC` (no read needed in between, so `MULTI` is enough), or a 3-line Lua script, or `EXPIRE … NX`.
 - Licensing context: Redis moved to source-available licenses in 2024, and the Linux Foundation fork **Valkey** appeared (AWS ElastiCache and Memorystore offer Valkey). Redis 8 added AGPL as an option. Worth knowing if they ask.
 
 ---
@@ -42,6 +60,27 @@ Redis data structures, caching patterns, failure modes, locks, and rate limiting
 <!-- theory-links:end -->
 
 ---
+
+### Everyday commands for lists, sets and sorted sets
+| Type | Command | Does | Cost |
+|---|---|---|---|
+| List | `LPUSH k v…` / `RPUSH` | add at the front / back | O(1) per item |
+| | `LPOP` / `RPOP` | remove and return from the front / back | O(1) |
+| | `LRANGE k start stop` | read a range by position, both ends **inclusive**; `-1` = last (`0 -1` = all) | O(start + count) |
+| | `LTRIM k start stop` | keep only that range (cap a list: `LTRIM k 0 499`) | O(removed) |
+| | `LLEN`, `LINDEX k i` | length; item at a position | O(1); O(i) |
+| | `LREM k count v` | remove occurrences of a value | O(n) |
+| | `BLPOP k timeout` / `LMOVE` | wait for an item (simple queue); move between lists | O(1) |
+| Set | `SADD` / `SREM` | add / remove members | O(1) each |
+| | `SISMEMBER k v` / `SMISMEMBER k v1 v2…` | is it a member? (many at once, 6.2+) → `1 0 1` | O(1) each |
+| | `SMEMBERS k` | **all** members; fine for small sets, avoid on big ones (use `SSCAN`) | O(n) |
+| | `SCARD`, `SINTER` / `SUNION` / `SDIFF` | size; intersection / union / difference | O(n) |
+| Sorted set | `ZADD k score member` | add or update with a score; re-adding the same member just updates it | O(log n) |
+| | `ZRANGE k (1050 -inf BYSCORE REV LIMIT 0 20` | 20 members with score < 1050, highest first (`(` = exclusive) | O(log n + count) |
+| | `ZREMRANGEBYRANK k 0 -501` | keep only the top 500 by score | O(log n + removed) |
+| | `ZUNION n k1 k2… AGGREGATE MAX` / `ZUNIONSTORE` | merge sorted sets on the server | O(total size) |
+
+**Merging feeds:** Redis has no "merge two lists in order" command. Sorted sets can be merged server-side with `ZUNION`, but in a Cluster all keys must be in one slot, and a user's timeline and a celebrity's post list live on different nodes, so the feed service usually fetches both and merges ~1,000 IDs in memory. Lists vs sorted sets for timelines: a list only reads by position and `LPUSH` always adds at the front; a sorted set keeps items ordered by score wherever they're inserted (useful for backfills) and answers "older than X" directly.
 
 ## 3. Caching patterns
 
@@ -205,7 +244,60 @@ redis.call('HSET', KEYS[1], 'tokens', tokens, 'ts', ARGV[3])
 redis.call('PEXPIRE', KEYS[1], math.ceil(tonumber(ARGV[1]) / tonumber(ARGV[2]) * 1000))
 return allowed and 1 or 0
 ```
-Other algorithms: fixed window (`INCR` + `EXPIRE`, which allows bursts at window edges), sliding log (a ZSET of timestamps, exact but memory-heavy), sliding window counter (weighted average of two windows, a good compromise). See the API doc for details.
+How the script works: `HMGET` reads the bucket (missing → full bucket); add the tokens earned since the last call (`elapsed × rate`, capped at capacity); if there are enough for this request's cost, subtract; `HSET` writes tokens + time back; `PEXPIRE` lets an idle bucket disappear (it would be full again by then anyway). Because Redis runs the whole script without interleaving, two pods can never both spend the last token. Prefer the Redis clock (`redis.call('TIME')`) over `now_ms` passed in by pods whose clocks drift.
+
+**Rate limit + daily quota in one atomic call** (tested on Redis 7.0; both keys carry the `{agency42}` hash tag so they're in one slot):
+```lua
+-- KEYS[1] = bucket key, KEYS[2] = daily quota key (same {agency} hash tag → same slot)
+-- ARGV[1] = rate (tokens/s), ARGV[2] = burst (bucket size), ARGV[3] = cost,
+-- ARGV[4] = daily quota, ARGV[5] = quota key TTL in seconds
+local rate, burst, cost = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
+local quota, quotaTtl = tonumber(ARGV[4]), tonumber(ARGV[5])
+
+local t = redis.call('TIME')                         -- {seconds, microseconds}: Redis clock
+local now = t[1] * 1000 + math.floor(t[2] / 1000)    -- milliseconds
+
+-- 1. read the bucket (missing → full)
+local b = redis.call('HMGET', KEYS[1], 'tokens', 'ts')
+local tokens = tonumber(b[1]) or burst
+local ts = tonumber(b[2]) or now
+
+-- 2. refill for the time that passed, capped at the bucket size
+tokens = math.min(burst, tokens + (now - ts) * rate / 1000)
+
+-- 3. check both limits BEFORE spending anything
+local used = tonumber(redis.call('GET', KEYS[2]) or '0')
+if tokens < cost then
+  redis.call('HSET', KEYS[1], 'tokens', tokens, 'ts', now)
+  return {0, 'rate', math.ceil((cost - tokens) * 1000 / rate)}   -- denied + retry-after ms
+end
+if used + cost > quota then
+  return {0, 'quota', 0}
+end
+
+-- 4. both OK: spend and write back
+tokens = tokens - cost
+redis.call('HSET', KEYS[1], 'tokens', tokens, 'ts', now)
+redis.call('PEXPIRE', KEYS[1], 60000)                -- idle bucket disappears after 60 s
+redis.call('INCRBY', KEYS[2], cost)
+redis.call('EXPIRE', KEYS[2], quotaTtl, 'NX')        -- set TTL only once (Redis 7+)
+return {1, 'ok', math.floor(tokens)}
+```
+Called from Node (ioredis): `redis.defineCommand('limit', { numberOfKeys: 2, lua: LIMIT_LUA })` once at startup (it loads the script and calls it by SHA afterwards), then per request `await redis.limit('rl:{agency42}:bucket', 'quota:{agency42}:2026-10-28', 50, 100, cost, 1000000, 172800)` → `[1,'ok',tokensLeft]` or `[0,'rate',retryAfterMs]` / `[0,'quota',0]`. The script checks **both** limits before spending, so a request rejected by the quota doesn't burn a token.
+
+**Lua in Redis**: Lua is a small general-purpose scripting language (not Redis-specific; also embedded in nginx/OpenResty, games, Neovim). Redis embeds a Lua 5.1 interpreter; a script reaches Redis through `redis.call(...)`, gets keys in `KEYS[1..]` and other arguments (always strings) in `ARGV[1..]`. Lua basics that bite: arrays start at **1**, `~=` is "not equal", `..` concatenates, a missing value is `nil` (and `redis.call('GET')` of a missing key returns `false`, hence `or '0'`). Send it with `EVAL script numkeys keys… args…`; `SCRIPT LOAD` + `EVALSHA` avoids resending the text. Redis 7 **Functions** (`FUNCTION LOAD`, `FCALL`) store named scripts in Redis itself.
+
+Fixed window, concretely:
+```
+INCR   rl:agency42:1730106000      -- key = agency + current second (unix time); returns the new count
+EXPIRE rl:agency42:1730106000 2    -- auto-delete shortly after the second ends
+count > 50 → 429
+```
+Daily quota the same way: `INCRBY quota:{agency42}:2026-10-28 <cost>` (adds the request's cost, returns the day's total), `EXPIRE` 48 h, `> 1,000,000` → 429. UTC calendar days keep it simple.
+
+Other algorithms: fixed window (`INCR` + `EXPIRE`, which allows bursts at window edges: 50 at 0.99 s + 50 at 1.01 s), sliding log (a ZSET of timestamps, exact but memory-heavy), sliding window counter (weighted average of two windows, a good compromise). See the API doc for details.
+
+**Limiter counters are disposable.** They only answer "allow this request now?". Don't flush them into a DB for billing: read-then-reset loses increments in between, `GETDEL` loses the count if you crash before the DB write, and Redis replication is async so a failover can lose recent increments. Bill from **usage events** (each allowed request → stream → idempotent consumer → usage table).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase

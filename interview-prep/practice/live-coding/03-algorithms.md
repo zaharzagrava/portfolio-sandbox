@@ -2,7 +2,7 @@
 
 100 problems most likely to come up in Full Stack Node.js live-coding rounds. Try each one before opening the solution. Every solution was run against the tests shown.
 
-Difficulty: Easy 30 · Medium 62 · Hard 8
+Difficulty: Easy 26 · Medium 61 · Hard 13
 
 ## Index
 
@@ -31,7 +31,7 @@ Difficulty: Easy 30 · Medium 62 · Hard 8
 | algo-021 | [Sliding Window Maximum](#algo-021) | Monotonic deque | Hard |
 | algo-022 | [Valid Parentheses](#algo-022) | Stack | Easy |
 | algo-023 | [Min Stack](#algo-023) | Stack | Medium |
-| algo-024 | [Evaluate Reverse Polish Notation](#algo-024) | Stack | Medium |
+| algo-024 | [Find the Duplicate Number](#algo-024) | Fast & slow pointers (Floyd on array) | Medium |
 | algo-025 | [Daily Temperatures](#algo-025) | Monotonic stack | Medium |
 | algo-026 | [Largest Rectangle in Histogram](#algo-026) | Monotonic stack | Hard |
 | algo-027 | [Binary Search](#algo-027) | Binary search | Easy |
@@ -51,13 +51,13 @@ Difficulty: Easy 30 · Medium 62 · Hard 8
 | algo-041 | [Non-overlapping Intervals](#algo-041) | Intervals (greedy) | Medium |
 | algo-042 | [Meeting Rooms II](#algo-042) | Intervals (sweep line) | Medium |
 | algo-043 | [Subarray Sum Equals K](#algo-043) | Prefix sum + hash map | Medium |
-| algo-044 | [Range Sum Query (Immutable)](#algo-044) | Prefix sum | Easy |
+| algo-044 | [Merge Sorted Array](#algo-044) | Two pointers (fill from the back) | Easy |
 | algo-045 | [Longest Common Prefix](#algo-045) | Strings | Easy |
-| algo-046 | [String Compression](#algo-046) | Run-length encoding | Easy |
+| algo-046 | [Rotate Image](#algo-046) | Matrix (in-place transform) | Medium |
 | algo-047 | [Valid Palindrome II](#algo-047) | Two pointers | Easy |
-| algo-048 | [Isomorphic Strings](#algo-048) | Hash map | Easy |
+| algo-048 | [Spiral Matrix](#algo-048) | Matrix (boundary traversal) | Medium |
 | algo-049 | [Roman to Integer](#algo-049) | Strings | Easy |
-| algo-050 | [Find All Anagrams in a String](#algo-050) | Sliding window | Medium |
+| algo-050 | [Longest Palindromic Substring](#algo-050) | Expand around center | Medium |
 | algo-051 | [Maximum Depth of Binary Tree](#algo-051) | Trees (DFS) | Easy |
 | algo-052 | [Invert Binary Tree](#algo-052) | Trees (DFS) | Easy |
 | algo-053 | [Same Tree](#algo-053) | Trees (DFS) | Easy |
@@ -74,7 +74,7 @@ Difficulty: Easy 30 · Medium 62 · Hard 8
 | algo-064 | [Find Median from Data Stream](#algo-064) | Heap / two heaps | Hard |
 | algo-065 | [Task Scheduler](#algo-065) | Greedy + heap | Medium |
 | algo-066 | [Number of Islands](#algo-066) | Graphs (grid DFS/BFS) | Medium |
-| algo-067 | [Max Area of Island](#algo-067) | Graphs (grid DFS/BFS) | Medium |
+| algo-067 | [Pacific Atlantic Water Flow](#algo-067) | Graphs (reverse multi-source DFS) | Medium |
 | algo-068 | [Clone Graph](#algo-068) | Graphs (DFS + hash map) | Medium |
 | algo-069 | [Course Schedule](#algo-069) | Graphs (topological sort) | Medium |
 | algo-070 | [Course Schedule II](#algo-070) | Graphs (topological sort) | Medium |
@@ -87,10 +87,10 @@ Difficulty: Easy 30 · Medium 62 · Hard 8
 | algo-077 | [Combination Sum](#algo-077) | Backtracking | Medium |
 | algo-078 | [Generate Parentheses](#algo-078) | Backtracking | Medium |
 | algo-079 | [Word Search](#algo-079) | Backtracking (grid DFS) | Medium |
-| algo-080 | [Letter Combinations of a Phone Number](#algo-080) | Backtracking | Medium |
+| algo-080 | [Longest Increasing Path in a Matrix](#algo-080) | DFS + memoization (DP on a DAG) | Hard |
 | algo-081 | [Climbing Stairs](#algo-081) | Dynamic programming (1D) | Easy |
 | algo-082 | [House Robber](#algo-082) | Dynamic programming (1D) | Medium |
-| algo-083 | [House Robber II](#algo-083) | Dynamic programming (1D) | Medium |
+| algo-083 | [Construct Binary Tree from Preorder and Inorder Traversal](#algo-083) | Trees (divide and conquer) | Medium |
 | algo-084 | [Coin Change](#algo-084) | Dynamic programming (unbounded knapsack) | Medium |
 | algo-085 | [Longest Increasing Subsequence](#algo-085) | Dynamic programming (LIS / binary search) | Medium |
 | algo-086 | [Longest Common Subsequence](#algo-086) | Dynamic programming (2D) | Medium |
@@ -101,12 +101,12 @@ Difficulty: Easy 30 · Medium 62 · Hard 8
 | algo-091 | [Maximum Subarray](#algo-091) | Dynamic programming (Kadane) | Easy |
 | algo-092 | [Decode Ways](#algo-092) | Dynamic programming (1D) | Medium |
 | algo-093 | [Jump Game](#algo-093) | Greedy | Medium |
-| algo-094 | [Gas Station](#algo-094) | Greedy | Medium |
-| algo-095 | [Best Time to Buy and Sell Stock II](#algo-095) | Greedy | Easy |
+| algo-094 | [Binary Tree Maximum Path Sum](#algo-094) | Trees (DFS: return one, record another) | Hard |
+| algo-095 | [Serialize and Deserialize Binary Tree](#algo-095) | Trees (serialization) | Hard |
 | algo-096 | [Implement Trie (Prefix Tree)](#algo-096) | Trie | Medium |
-| algo-097 | [Design Add and Search Words Data Structure](#algo-097) | Trie + DFS | Medium |
+| algo-097 | [Word Search II](#algo-097) | Trie + backtracking | Hard |
 | algo-098 | [Single Number](#algo-098) | Bit manipulation | Easy |
-| algo-099 | [Counting Bits](#algo-099) | Bit manipulation + DP | Easy |
+| algo-099 | [Alien Dictionary](#algo-099) | Graphs (topological sort) | Hard |
 | algo-100 | [LRU Cache](#algo-100) | Design (hash map + ordering) | Medium |
 
 ---
@@ -1662,23 +1662,22 @@ assert.equal(dup.getMin(), 1);
 ---
 
 <a id="algo-024"></a>
-### algo-024. Evaluate Reverse Polish Notation
+### algo-024. Find the Duplicate Number
 
-*Stack · Medium*
+*Fast & slow pointers (Floyd on array) · Medium*
 
-Evaluate an arithmetic expression in Reverse Polish Notation, given as an array of tokens. Operators are `+ - * /`; division **truncates toward zero**. The input is always valid.
+Given an array `nums` of `n + 1` integers where every value is in the range `[1, n]`, exactly one value is repeated (possibly more than twice). Return that value **without modifying the array** and using only **O(1) extra space**.
 
-```
-evalRPN(["2","1","+","3","*"])  -> 9      // (2 + 1) * 3
-evalRPN(["4","13","5","/","+"]) -> 6      // 4 + 13 / 5
-```
+- `[1,3,4,2,2]` -> `2`
+- `[3,1,3,4,2]` -> `3`
+- `[3,3,3,3,3]` -> `3`
 
 **Starter**
 
 ```ts
-function evalRPN(tokens: string[]): number {
+function findDuplicate(nums: number[]): number {
   // TODO
-  return 0;
+  return -1;
 }
 ```
 
@@ -1686,40 +1685,44 @@ function evalRPN(tokens: string[]): number {
 <summary>Solution</summary>
 
 ```ts
-function evalRPN(tokens: string[]): number {
-  const stack: number[] = [];
-  for (const token of tokens) {
-    if (token === '+' || token === '-' || token === '*' || token === '/') {
-      const b = stack.pop()!; // right operand is on top
-      const a = stack.pop()!;
-      if (token === '+') stack.push(a + b);
-      else if (token === '-') stack.push(a - b);
-      else if (token === '*') stack.push(a * b);
-      else stack.push(Math.trunc(a / b));
-    } else {
-      stack.push(Number(token));
-    }
+function findDuplicate(nums: number[]): number {
+  // Read the array as a linked list: index i points to index nums[i].
+  // Two indices point at the duplicate value, so that is where the cycle starts.
+  let slow = 0;
+  let fast = 0;
+  do {
+    slow = nums[slow];
+    fast = nums[nums[fast]];
+  } while (slow !== fast);
+
+  // Phase 2: from the head and from the meeting point, the cycle entrance is equally far.
+  slow = 0;
+  while (slow !== fast) {
+    slow = nums[slow];
+    fast = nums[fast];
   }
-  return stack[0];
+  return slow;
 }
 ```
 
-**Why it works.** RPN is designed for a stack: push numbers, and on an operator pop two operands, apply it, and push the result. The final stack holds the answer. O(n) time, O(n) space. Traps: the first pop is the right operand (matters for - and /), and division must use Math.trunc, not Math.floor, so -7/2 gives -3. Also detect operators explicitly, because "-3" is a number token.
+**Why it works.** Pattern: Floyd's cycle detection on an implicit linked list where index i points to nums[i]. Values are in [1, n], so index 0 is never pointed at (it is the head outside the cycle), and the duplicate value has two incoming pointers, which makes it the entrance of the cycle. Brute force compares every pair (O(n^2)) and keeps re-checking the same values; a Set remembers every value seen but costs O(n) space, and sorting modifies the array. Floyd remembers only two positions: phase 1 finds a meeting point inside the cycle, phase 2 walks one pointer from index 0 and one from the meeting point at the same speed, and they meet at the entrance. O(n) time, O(1) space. Alternative within the rules: binary search on the value v, counting how many numbers are <= v (O(n log n)). Trap: both pointers start at the same index, so phase 1 needs a do-while (or one step before the loop).
 
-**Say it.** I push numbers onto a stack and, for each operator, pop the right then left operand, compute, and push the result back; the last value is the answer.
+**Say it.** I treat the array as a linked list where i points to nums[i]; the duplicate value is the entrance of the cycle, so Floyd's slow/fast pointers find a meeting point and a second walk from the start finds the entrance. O(n) time, O(1) space.
 
-**Follow-up.** Q: How would you evaluate a normal infix string like "3 + 4 * 2"? A: Convert to RPN with Dijkstra's shunting-yard algorithm (operator stack with precedence), or evaluate directly with two stacks.
+**Follow-up.** Q: Why does restarting one pointer at index 0 land on the entrance? A: Say the head is a steps from the entrance and they met b steps into a cycle of length c. Slow walked a + b, fast walked 2(a + b), and the difference a + b is a multiple of c. So a more steps from the meeting point completes whole loops back to the entrance, exactly when the other pointer arrives there from the head.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.equal(evalRPN(['2', '1', '+', '3', '*']), 9);
-assert.equal(evalRPN(['4', '13', '5', '/', '+']), 6);
-assert.equal(evalRPN(['10', '6', '9', '3', '+', '-11', '*', '/', '*', '17', '+', '5', '+']), 22);
-assert.equal(evalRPN(['-7', '2', '/']), -3);
-assert.equal(evalRPN(['42']), 42);
+assert.equal(findDuplicate([1, 3, 4, 2, 2]), 2);
+assert.equal(findDuplicate([3, 1, 3, 4, 2]), 3);
+assert.equal(findDuplicate([3, 3, 3, 3, 3]), 3);
+assert.equal(findDuplicate([1, 1]), 1);
+const input = [2, 5, 9, 6, 9, 3, 8, 9, 7, 1];
+assert.equal(findDuplicate(input), 9);
+assert.deepEqual(input, [2, 5, 9, 6, 9, 3, 8, 9, 7, 1]); // not modified
 ```
 
 </details>
@@ -3167,27 +3170,20 @@ assert.equal(subarraySum([3, 4, 7, 2, -3, 1, 4, 2], 7), 4);
 ---
 
 <a id="algo-044"></a>
-### algo-044. Range Sum Query (Immutable)
+### algo-044. Merge Sorted Array
 
-*Prefix sum · Easy*
+*Two pointers (fill from the back) · Easy*
 
-Implement class `NumArray`: the constructor takes an integer array `nums`, and `sumRange(left, right)` returns the sum of `nums[left..right]` inclusive. `sumRange` will be called many times, so make it O(1).
+`nums1` has length `m + n`: its first `m` values are sorted and the last `n` slots are `0` placeholders. `nums2` has `n` sorted values. Merge `nums2` into `nums1` **in place** so `nums1` is fully sorted. Return nothing.
 
-```
-const a = new NumArray([-2, 0, 3, -5, 2, -1]);
-a.sumRange(0, 2); // 1
-a.sumRange(2, 5); // -1
-a.sumRange(0, 5); // -3
-```
+- `nums1 = [1,2,3,0,0,0], m = 3, nums2 = [2,5,6], n = 3` -> `nums1 = [1,2,2,3,5,6]`
+- `nums1 = [0], m = 0, nums2 = [1], n = 1` -> `nums1 = [1]`
 
 **Starter**
 
 ```ts
-class NumArray {
-  constructor(nums: number[]) {}
-  sumRange(left: number, right: number): number {
-    return 0;
-  }
+function merge(nums1: number[], m: number, nums2: number[], n: number): void {
+  // TODO
 }
 ```
 
@@ -3195,37 +3191,33 @@ class NumArray {
 <summary>Solution</summary>
 
 ```ts
-class NumArray {
-  private prefix: number[]; // prefix[i] = sum of nums[0..i-1]
-
-  constructor(nums: number[]) {
-    this.prefix = new Array<number>(nums.length + 1).fill(0);
-    for (let i = 0; i < nums.length; i++) this.prefix[i + 1] = this.prefix[i] + nums[i];
+function merge(nums1: number[], m: number, nums2: number[], n: number): void {
+  let i = m - 1; // last real value in nums1
+  let j = n - 1; // last value in nums2
+  // Write the largest remaining value into the last free slot.
+  for (let w = m + n - 1; j >= 0; w--) {
+    nums1[w] = i >= 0 && nums1[i] > nums2[j] ? nums1[i--] : nums2[j--];
   }
-
-  sumRange(left: number, right: number): number {
-    return this.prefix[right + 1] - this.prefix[left];
-  }
+  // Leftover nums1 values are already in place.
 }
 ```
 
-**Why it works.** Summing the range on each call is O(n) per query. Precompute a prefix array of length n + 1 where prefix[i] is the sum of the first i elements; then any range sum is prefix[right + 1] - prefix[left]. O(n) preprocessing, O(1) per query, O(n) space. The extra leading 0 removes the left === 0 special case.
+**Why it works.** Pattern: two pointers that fill from the back. Brute force copies nums2 into the tail and sorts (O((m + n) log(m + n))), or merges from the front, which overwrites nums1 values that were not read yet and forces shifting (O(m * n)). The free space is at the end, so compare the two largest remaining values and write the bigger one into the last free slot. The write index w = i + j + 1 is always >= i, so it never overwrites a value that was not read yet. O(m + n) time, O(1) space. The loop can stop when nums2 is exhausted: whatever is left in nums1 is already sorted and in place. Trap: looping while i >= 0 instead of j >= 0 leaves nums2 values unmerged when nums1 runs out first (`[4,5,6]` + `[1,2,3]`).
 
-**Say it.** I precompute prefix sums once with a leading zero, so any range sum is just the difference of two prefix values in O(1).
+**Say it.** Since the empty space is at the back, I merge from the back: two pointers on the last real values of each array, and I write the larger one into the last free slot, until nums2 is used up. O(m + n) time, O(1) space.
 
-**Follow-up.** Q: What if the array also gets point updates? A: Use a Fenwick tree (Binary Indexed Tree) or a segment tree: O(log n) for both update and range query.
+**Follow-up.** Q: What if nums1 had no spare room and you had to return a new array? A: Then the normal front-to-back merge into a new array works, still O(m + n). The from-the-back trick is only needed when the output overlaps an input.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-const na = new NumArray([-2, 0, 3, -5, 2, -1]);
-assert.equal(na.sumRange(0, 2), 1);
-assert.equal(na.sumRange(2, 5), -1);
-assert.equal(na.sumRange(0, 5), -3);
-assert.equal(na.sumRange(3, 3), -5);
-assert.equal(new NumArray([7]).sumRange(0, 0), 7);
+const a = [1, 2, 3, 0, 0, 0]; merge(a, 3, [2, 5, 6], 3); assert.deepEqual(a, [1, 2, 2, 3, 5, 6]);
+const b = [1]; merge(b, 1, [], 0); assert.deepEqual(b, [1]);
+const c = [0]; merge(c, 0, [1], 1); assert.deepEqual(c, [1]);
+const d = [4, 5, 6, 0, 0, 0]; merge(d, 3, [1, 2, 3], 3); assert.deepEqual(d, [1, 2, 3, 4, 5, 6]);
+const e = [-1, 0, 0, 3, 3, 3, 0, 0, 0]; merge(e, 6, [1, 2, 2], 3); assert.deepEqual(e, [-1, 0, 0, 1, 2, 2, 3, 3, 3]);
 ```
 
 </details>
@@ -3272,7 +3264,7 @@ function longestCommonPrefix(strs: string[]): string {
 }
 ```
 
-**Why it works.** Vertical scanning compares column i across all strings and stops at the first mismatch or the end of the shortest string, so it never does more work than needed. O(S) time where S is the total number of characters (worst case all equal), O(1) extra space. An alternative is sorting and comparing only the first and last strings (O(S log n)). Trap: an empty array or an empty string in the array.
+**Why it works.** Vertical scanning compares column i across all strings and stops at the first mismatch or the end of the shortest string, so it never does more work than needed. Comparing every string against every other, or re-checking whole prefixes at each length, redoes work; scanning one column at a time remembers that all earlier columns already matched. O(S) time where S is the total number of characters (worst case all equal), O(1) extra space. An alternative is sorting and comparing only the first and last strings (O(S log n)). Trap: an empty array or an empty string in the array.
 
 **Say it.** I compare the strings column by column against the first one and return the prefix as soon as any string ends or has a different character.
 
@@ -3298,24 +3290,20 @@ assert.equal(longestCommonPrefix(['abc', 'abc']), 'abc');
 ---
 
 <a id="algo-046"></a>
-### algo-046. String Compression
+### algo-046. Rotate Image
 
-*Run-length encoding · Easy*
+*Matrix (in-place transform) · Medium*
 
-Compress a string using counts of repeated characters: `"aabcccccaaa"` becomes `"a2b1c5a3"`. If the compressed string is **not shorter** than the original, return the original.
+Rotate an `n x n` matrix 90 degrees **clockwise, in place** (do not allocate another matrix).
 
-```
-compress("aabcccccaaa") -> "a2b1c5a3"
-compress("abc")         -> "abc"     // "a1b1c1" is longer
-compress("aaaaaaaaaaaa") -> "a12"
-```
+- `[[1,2,3],[4,5,6],[7,8,9]]` -> `[[7,4,1],[8,5,2],[9,6,3]]`
+- `[[1]]` -> `[[1]]`
 
 **Starter**
 
 ```ts
-function compress(s: string): string {
+function rotate(matrix: number[][]): void {
   // TODO
-  return s;
 }
 ```
 
@@ -3323,36 +3311,38 @@ function compress(s: string): string {
 <summary>Solution</summary>
 
 ```ts
-function compress(s: string): string {
-  const parts: string[] = [];
-  let i = 0;
-  while (i < s.length) {
-    let j = i;
-    while (j < s.length && s[j] === s[i]) j++; // end of the current run
-    parts.push(s[i] + String(j - i));
-    i = j;
+function rotate(matrix: number[][]): void {
+  const n = matrix.length;
+  // 1) Transpose: swap across the main diagonal. j starts at i + 1 so each pair swaps once.
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      [matrix[i][j], matrix[j][i]] = [matrix[j][i], matrix[i][j]];
+    }
   }
-  const compressed = parts.join('');
-  return compressed.length < s.length ? compressed : s;
+  // 2) Mirror left-right.
+  for (const row of matrix) row.reverse();
 }
 ```
 
-**Why it works.** Scan runs of equal characters with two indices: i marks the run start and j advances to the first different character, so each run produces char + length. Building with an array and join (or a single string builder) keeps it O(n); repeated string concatenation in some languages is O(n^2). O(n) time, O(n) space. Traps: multi-digit counts like 12, and returning the original when compression does not help.
+**Why it works.** Pattern: in-place matrix transform by composing simple moves. A clockwise rotation sends cell (r, c) to (c, n - 1 - r). Brute force builds a second matrix with that formula: O(n^2) time but O(n^2) extra space, which the task forbids. Insight: the rotation equals a transpose ((r, c) -> (c, r)) followed by a left-right mirror ((c, r) -> (c, n - 1 - r)), and both are plain swaps, so nothing has to be remembered except one value during a swap. O(n^2) time, O(1) extra space. Counter-clockwise: transpose, then reverse the order of the rows. Alternative: rotate four cells at a time, layer by layer. Trap: running the transpose loop over all j (not j > i) swaps every pair twice and undoes itself.
 
-**Say it.** I walk the string run by run, appending each character with its run length, and return the original if the result is not shorter.
+**Say it.** A clockwise rotation is a transpose followed by reversing each row; both are in-place swaps. I only swap above the diagonal so each pair swaps once. O(n^2) time, O(1) space.
 
-**Follow-up.** Q: How would you do LeetCode 443 (compress a char array in place and return the new length)? A: Use read and write pointers: write the char, then the count digits only if count > 1; the write index never passes the read index.
+**Follow-up.** Q: How do you rotate counter-clockwise or by 180 degrees? A: Counter-clockwise: transpose, then reverse the order of the rows (or reverse each row first, then transpose). 180 degrees: reverse the row order and reverse each row.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.equal(compress('aabcccccaaa'), 'a2b1c5a3');
-assert.equal(compress('abc'), 'abc');
-assert.equal(compress('aaaaaaaaaaaa'), 'a12');
-assert.equal(compress(''), '');
-assert.equal(compress('aabb'), 'aabb');
+const m3 = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]; rotate(m3);
+assert.deepEqual(m3, [[7, 4, 1], [8, 5, 2], [9, 6, 3]]);
+const m4 = [[5, 1, 9, 11], [2, 4, 8, 10], [13, 3, 6, 7], [15, 14, 12, 16]]; rotate(m4);
+assert.deepEqual(m4, [[15, 13, 2, 5], [14, 3, 4, 1], [12, 6, 8, 9], [16, 7, 10, 11]]);
+const m1 = [[1]]; rotate(m1); assert.deepEqual(m1, [[1]]);
+const m2 = [[1, 2], [3, 4]]; rotate(m2); assert.deepEqual(m2, [[3, 1], [4, 2]]);
+const back = [[1, 2], [3, 4]]; rotate(back); rotate(back); rotate(back); rotate(back);
+assert.deepEqual(back, [[1, 2], [3, 4]]); // four turns = identity
 ```
 
 </details>
@@ -3440,25 +3430,21 @@ assert.equal(validPalindrome('abcxyba'), false);
 ---
 
 <a id="algo-048"></a>
-### algo-048. Isomorphic Strings
+### algo-048. Spiral Matrix
 
-*Hash map · Easy*
+*Matrix (boundary traversal) · Medium*
 
-Two strings `s` and `t` are isomorphic if the characters in `s` can be replaced to get `t`, where each character maps to exactly one character, and no two characters map to the same one (order preserved). Return `true` if they are isomorphic.
+Given an `m x n` matrix, return all its elements in **spiral order** (clockwise, starting at the top-left).
 
-```
-isIsomorphic("egg", "add")     -> true
-isIsomorphic("foo", "bar")     -> false
-isIsomorphic("paper", "title") -> true
-isIsomorphic("badc", "baba")   -> false
-```
+- `[[1,2,3],[4,5,6],[7,8,9]]` -> `[1,2,3,6,9,8,7,4,5]`
+- `[[1,2,3,4],[5,6,7,8],[9,10,11,12]]` -> `[1,2,3,4,8,12,11,10,9,5,6,7]`
 
 **Starter**
 
 ```ts
-function isIsomorphic(s: string, t: string): boolean {
+function spiralOrder(matrix: number[][]): number[] {
   // TODO
-  return false;
+  return [];
 }
 ```
 
@@ -3466,38 +3452,49 @@ function isIsomorphic(s: string, t: string): boolean {
 <summary>Solution</summary>
 
 ```ts
-function isIsomorphic(s: string, t: string): boolean {
-  if (s.length !== t.length) return false;
-  const sToT = new Map<string, string>();
-  const tToS = new Map<string, string>();
-  for (let i = 0; i < s.length; i++) {
-    const a = s[i];
-    const b = t[i];
-    if ((sToT.has(a) && sToT.get(a) !== b) || (tToS.has(b) && tToS.get(b) !== a)) return false;
-    sToT.set(a, b);
-    tToS.set(b, a);
+function spiralOrder(matrix: number[][]): number[] {
+  const res: number[] = [];
+  if (matrix.length === 0) return res;
+  let top = 0;
+  let bottom = matrix.length - 1;
+  let left = 0;
+  let right = matrix[0].length - 1;
+  while (top <= bottom && left <= right) {
+    for (let c = left; c <= right; c++) res.push(matrix[top][c]);
+    top++;
+    for (let r = top; r <= bottom; r++) res.push(matrix[r][right]);
+    right--;
+    // A single remaining row or column must not be walked back a second time.
+    if (top <= bottom) {
+      for (let c = right; c >= left; c--) res.push(matrix[bottom][c]);
+      bottom--;
+    }
+    if (left <= right) {
+      for (let r = bottom; r >= top; r--) res.push(matrix[r][left]);
+      left++;
+    }
   }
-  return true;
+  return res;
 }
 ```
 
-**Why it works.** The mapping must be a bijection, so check both directions: keep a map s->t and a map t->s and fail on any conflict. A single map misses cases like "badc" vs "baba" where two different characters map to the same one. O(n) time, O(k) space for the alphabet. Alternative: compare the "first-seen index" pattern of both strings.
+**Why it works.** Pattern: shrinking boundaries. Brute force simulates a walker with a direction vector and a visited matrix, turning when it hits the edge or a visited cell: O(m * n) time but O(m * n) extra space for the visited flags. Insight: the unvisited cells always form a rectangle, so remember only its four edges (top, bottom, left, right). Each finished side moves one edge inward by one. O(m * n) time, O(1) extra space besides the output. Trap: when one row or one column is left, the bottom and left passes would walk it again in reverse; re-check `top <= bottom` and `left <= right` before those two passes.
 
-**Say it.** I keep two maps, one in each direction, and fail as soon as a character would map to two different characters or two characters would map to the same one.
+**Say it.** I keep four boundaries, walk the top row, right column, bottom row and left column, and shrink the matching boundary after each side; before walking back along the bottom or left I re-check the boundaries so a single leftover row or column is not repeated. O(m times n).
 
-**Follow-up.** Q: How would you group a list of words by isomorphic pattern? A: Normalize each word to the pattern of first-occurrence indices (e.g. "paper" -> "0,1,0,3,4") and group by that key in a hash map.
+**Follow-up.** Q: Generate an n x n matrix filled with 1..n^2 in spiral order (Spiral Matrix II)? A: Same four boundaries and the same four passes, but write a counter into each cell instead of reading it.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.equal(isIsomorphic('egg', 'add'), true);
-assert.equal(isIsomorphic('foo', 'bar'), false);
-assert.equal(isIsomorphic('paper', 'title'), true);
-assert.equal(isIsomorphic('badc', 'baba'), false);
-assert.equal(isIsomorphic('', ''), true);
-assert.equal(isIsomorphic('ab', 'a'), false);
+assert.deepEqual(spiralOrder([[1, 2, 3], [4, 5, 6], [7, 8, 9]]), [1, 2, 3, 6, 9, 8, 7, 4, 5]);
+assert.deepEqual(spiralOrder([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]), [1, 2, 3, 4, 8, 12, 11, 10, 9, 5, 6, 7]);
+assert.deepEqual(spiralOrder([[1, 2, 3]]), [1, 2, 3]);
+assert.deepEqual(spiralOrder([[1], [2], [3]]), [1, 2, 3]);
+assert.deepEqual(spiralOrder([[7]]), [7]);
+assert.deepEqual(spiralOrder([]), []);
 ```
 
 </details>
@@ -3571,23 +3568,22 @@ assert.equal(romanToInt('MMMCMXCIX'), 3999);
 ---
 
 <a id="algo-050"></a>
-### algo-050. Find All Anagrams in a String
+### algo-050. Longest Palindromic Substring
 
-*Sliding window · Medium*
+*Expand around center · Medium*
 
-Given strings `s` and `p` (lowercase letters), return all start indices of substrings of `s` that are anagrams of `p`, in increasing order.
+Given a string `s`, return its longest **substring** that is a palindrome. If several have the same maximum length, return any of them.
 
-```
-findAnagrams("cbaebabacd", "abc") -> [0, 6]   // "cba", "bac"
-findAnagrams("abab", "ab")        -> [0, 1, 2]
-```
+- `"babad"` -> `"bab"` (`"aba"` is also accepted)
+- `"cbbd"` -> `"bb"`
+- `"a"` -> `"a"`
 
 **Starter**
 
 ```ts
-function findAnagrams(s: string, p: string): number[] {
+function longestPalindrome(s: string): string {
   // TODO
-  return [];
+  return '';
 }
 ```
 
@@ -3595,51 +3591,46 @@ function findAnagrams(s: string, p: string): number[] {
 <summary>Solution</summary>
 
 ```ts
-function findAnagrams(s: string, p: string): number[] {
-  const result: number[] = [];
-  const m = p.length;
-  if (m === 0 || m > s.length) return result;
-  // diff[c] = count in window - count in p; window is an anagram when all are 0
-  const diff = new Array(26).fill(0);
-  for (let i = 0; i < m; i++) {
-    diff[p.charCodeAt(i) - 97]--;
-    diff[s.charCodeAt(i) - 97]++;
-  }
-  let nonZero = diff.filter((d) => d !== 0).length;
-
-  const bump = (c: number, delta: number) => {
-    if (diff[c] === 0) nonZero++;
-    diff[c] += delta;
-    if (diff[c] === 0) nonZero--;
+function longestPalindrome(s: string): string {
+  let start = 0;
+  let len = 0;
+  // Grow a palindrome outward from the center between l and r.
+  const expand = (l: number, r: number): void => {
+    while (l >= 0 && r < s.length && s[l] === s[r]) {
+      l--;
+      r++;
+    }
+    // The loop stops one step too far on each side.
+    if (r - l - 1 > len) {
+      start = l + 1;
+      len = r - l - 1;
+    }
   };
-
-  for (let start = 0; ; start++) {
-    if (nonZero === 0) result.push(start);
-    const end = start + m;
-    if (end >= s.length) break;
-    bump(s.charCodeAt(end) - 97, 1); // char entering
-    bump(s.charCodeAt(start) - 97, -1); // char leaving
+  for (let i = 0; i < s.length; i++) {
+    expand(i, i); // odd length, centered on a character
+    expand(i, i + 1); // even length, centered between two characters
   }
-  return result;
+  return s.slice(start, start + len);
 }
 ```
 
-**Why it works.** Brute force sorts or counts every window of length |p|, O(n * m). Instead keep a fixed-size window and a single array of count differences (window minus p), updating it in O(1) as one character enters and one leaves. Tracking how many letters have a non-zero difference tells you instantly when the window is an anagram. O(n) time, O(1) space (26 counters) besides the output.
+**Why it works.** Pattern: expand around the center. Brute force checks all O(n^2) substrings with an O(n) palindrome check each: O(n^3), and it re-verifies the same inner part again and again ("aba" is checked again inside "cabac"). Insight: a palindrome is its inner palindrome plus one equal character on each side, so grow it outward from its center and every expansion step reuses the match already confirmed. There are 2n - 1 centers (each character and each gap) and each expansion is at most O(n). O(n^2) time, O(1) space. The DP table `pal[i][j] = s[i] === s[j] && pal[i + 1][j - 1]` is also O(n^2) time but O(n^2) space; Manacher's algorithm is O(n) but rarely expected. Trap: forgetting the even-length centers ("abba" has no middle character).
 
-**Say it.** I slide a window the length of p over s, keeping a count difference array updated in O(1) per step, and record the start index whenever all differences are zero.
+**Say it.** Every palindrome grows from a center, so for each of the 2n - 1 centers, a character or the gap between two characters, I expand while both ends match and keep the longest. O(n^2) time, O(1) space.
 
-**Follow-up.** Q: What if the alphabet is all of Unicode? A: Replace the 26-slot array with a Map of differences and delete keys that reach 0; the window is an anagram when the map is empty.
+**Follow-up.** Q: Count all palindromic substrings instead (Palindromic Substrings)? A: Same expansion from every center, but add 1 for every successful expansion step instead of tracking the longest. Still O(n^2) time, O(1) space.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.deepEqual(findAnagrams('cbaebabacd', 'abc'), [0, 6]);
-assert.deepEqual(findAnagrams('abab', 'ab'), [0, 1, 2]);
-assert.deepEqual(findAnagrams('a', 'ab'), []);
-assert.deepEqual(findAnagrams('aaaa', 'a'), [0, 1, 2, 3]);
-assert.deepEqual(findAnagrams('xyz', 'abc'), []);
+assert.ok(['bab', 'aba'].includes(longestPalindrome('babad')));
+assert.equal(longestPalindrome('cbbd'), 'bb');
+assert.equal(longestPalindrome('a'), 'a');
+assert.equal(longestPalindrome(''), '');
+assert.equal(longestPalindrome('forgeeksskeegfor'), 'geeksskeeg');
+assert.equal(longestPalindrome('ac').length, 1);
 ```
 
 </details>
@@ -4150,11 +4141,11 @@ function levelOrder(root: TreeNode | null): number[][] {
 }
 ```
 
-**Why it works.** BFS processes nodes in order of distance from the root; keeping the current level as its own array (or snapshotting `queue.length` before the loop) groups values per level. Each node is enqueued and dequeued once: O(n) time, O(w) extra space where w is the max width (up to n/2). Trap: using `Array.prototype.shift()` on a big queue is O(n) per call in JS, so swap level arrays or use a head index instead.
+**Why it works.** BFS processes nodes in order of distance from the root; keeping the current level as its own array (or snapshotting `queue.length` before the loop) groups values per level. Running a separate depth-limited DFS for each level re-walks the top of the tree every time (O(n * h)); BFS remembers the current level as the frontier, so each node is visited once. Each node is enqueued and dequeued once: O(n) time, O(w) extra space where w is the max width (up to n/2). Trap: using `Array.prototype.shift()` on a big queue is O(n) per call in JS, so swap level arrays or use a head index instead.
 
 **Say it.** I do BFS one level at a time: the current level array produces one row of values and builds the next level from its children. O(n) time, O(width) space.
 
-**Follow-up.** Q: Return the levels in zigzag order (left-to-right, then right-to-left). A: Same BFS; reverse every other level's values before pushing (or fill each row from the opposite end). Still O(n).
+**Follow-up.** Q: Return the value you would see at each level looking from the right (Binary Tree Right Side View)? A: Same BFS; push the last value of each level. Or DFS visiting right before left and record the first node reached at each new depth. O(n).
 
 <details>
 <summary>Tests</summary>
@@ -4252,7 +4243,7 @@ function isValidBST(root: TreeNode | null): boolean {
 }
 ```
 
-**Why it works.** Pass down an open interval `(low, high)` that every node must fall into: going left tightens `high` to the parent's value, going right tightens `low`. The common wrong answer only compares a node with its direct children, which misses violations deeper down (third example). Each node is checked once: O(n) time, O(h) space. Alternative: an in-order traversal of a valid BST is strictly increasing.
+**Why it works.** Pass down an open interval `(low, high)` that every node must fall into: going left tightens `high` to the parent's value, going right tightens `low`. Brute force checks each node against every value in its subtrees (O(n^2)); passing the (low, high) range down remembers all ancestor constraints in two numbers. The common wrong answer only compares a node with its direct children, which misses violations deeper down (third example). Each node is checked once: O(n) time, O(h) space. Alternative: an in-order traversal of a valid BST is strictly increasing.
 
 **Say it.** I DFS while carrying the allowed range for each node, narrowing the upper bound when I go left and the lower bound when I go right; any node outside its range fails. O(n) time, O(h) space.
 
@@ -4577,7 +4568,7 @@ function diameterOfBinaryTree(root: TreeNode | null): number {
 
 **Say it.** One post-order DFS returns heights; at every node I update the answer with left height plus right height, because the longest path must bend somewhere. O(n) time, O(h) space.
 
-**Follow-up.** Q: How would you find the maximum path *sum* (node values can be negative)? A: Same pattern: the DFS returns the best downward gain `node.val + max(0, leftGain, rightGain)` and updates a global with `node.val + max(0,leftGain) + max(0,rightGain)` (Binary Tree Maximum Path Sum).
+**Follow-up.** Q: The tree is given as an undirected edge list with no root (diameter of a general tree)? A: Two BFS passes: from any node find the farthest node u; the farthest distance from u is the diameter. O(n).
 
 <details>
 <summary>Tests</summary>
@@ -4921,18 +4912,29 @@ assert.deepEqual(kClosest([[2, 2], [1, 1], [3, 3], [0, 0]], 1), [[0, 0]]);
 
 *Heap / priority queue · Hard*
 
-You are given `k` sorted arrays of integers (standing in for sorted linked lists). Merge them into one sorted array.
+You are given an array of `k` linked lists, each sorted in ascending order. Merge them into one sorted linked list and return its head (reuse the existing nodes).
 
 - `[[1,4,5],[1,3,4],[2,6]]` -> `[1,1,2,3,4,4,5,6]`
 - `[]` -> `[]`
 - `[[]]` -> `[]`
 
+(Lists are shown as arrays for readability.)
+
 **Starter**
 
 ```ts
-function mergeKLists(lists: number[][]): number[] {
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+
+function mergeKLists(lists: (ListNode | null)[]): ListNode | null {
   // TODO
-  return [];
+  return null;
 }
 ```
 
@@ -4940,6 +4942,27 @@ function mergeKLists(lists: number[][]): number[] {
 <summary>Solution</summary>
 
 ```ts
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val = 0, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
+  }
+}
+
+function fromArray(values: number[]): ListNode | null {
+  let head: ListNode | null = null;
+  for (let i = values.length - 1; i >= 0; i--) head = new ListNode(values[i], head);
+  return head;
+}
+
+function toArray(head: ListNode | null): number[] {
+  const out: number[] = [];
+  for (let node = head; node; node = node.next) out.push(node.val);
+  return out;
+}
+
 // Minimal binary min-heap ordered by a comparator.
 class MinHeap<T> {
   private data: T[] = [];
@@ -4949,9 +4972,6 @@ class MinHeap<T> {
   }
   get size(): number {
     return this.data.length;
-  }
-  peek(): T | undefined {
-    return this.data[0];
   }
   push(x: T): void {
     const d = this.data;
@@ -4987,39 +5007,42 @@ class MinHeap<T> {
   }
 }
 
-
-function mergeKLists(lists: number[][]): number[] {
-  // Heap entries: [value, listIndex, elementIndex]
-  const heap = new MinHeap<[number, number, number]>((a, b) => a[0] < b[0]);
-  lists.forEach((list, i) => {
-    if (list.length > 0) heap.push([list[0], i, 0]);
-  });
-  const result: number[] = [];
+function mergeKLists(lists: (ListNode | null)[]): ListNode | null {
+  // The heap holds the current head of every non-empty list.
+  const heap = new MinHeap<ListNode>((a, b) => a.val < b.val);
+  for (const head of lists) if (head) heap.push(head);
+  const dummy = new ListNode();
+  let tail = dummy;
   while (heap.size > 0) {
-    const [val, li, ei] = heap.pop()!;
-    result.push(val);
-    if (ei + 1 < lists[li].length) heap.push([lists[li][ei + 1], li, ei + 1]);
+    const node = heap.pop()!;
+    tail.next = node;
+    tail = node;
+    if (node.next) heap.push(node.next); // its successor becomes that list's new head
   }
-  return result;
+  tail.next = null;
+  return dummy.next;
 }
 ```
 
-**Why it works.** Keep one "head" per list in a min-heap; repeatedly pop the smallest and push the next element from the same list. With N total elements, that is O(N log k) time and O(k) heap space (plus the output). Brute force concatenates and sorts (O(N log N)), and merging lists one by one into an accumulator is O(N * k). Divide and conquer (merge pairs of lists, like merge sort) also achieves O(N log k). Trap: skipping empty lists before pushing their first element.
+**Why it works.** Pattern: k-way merge with a min-heap. Brute force either concatenates and sorts (O(N log N)) or, at every step, scans all k current heads for the smallest (O(N * k)), comparing the same heads again and again. Insight: the heap remembers the k heads in order, so each pick is O(log k): pop the smallest node, append it, and push its successor from the same list. A dummy head removes the "first node" special case. O(N log k) time for N total nodes, O(k) heap space; nodes are relinked, not copied. Merging lists one by one into an accumulator is O(N * k); divide and conquer (merge pairs of lists in rounds) is also O(N log k) with O(1) extra space. Trap: pushing `null` heads of empty lists into the heap.
 
-**Say it.** I put the first element of each list in a min-heap, then pop the smallest, append it, and push the next element from that same list, so it's O(N log k) for N total elements.
+**Say it.** I put the head of each list in a min-heap, then pop the smallest node, link it to the result, and push its next node, so it's O(N log k) for N total nodes.
 
-**Follow-up.** Q: Can you do it without a heap? A: Divide and conquer: merge lists in pairs (0+1, 2+3, ...), then merge the results, repeating until one list remains. Each round touches N elements and there are log k rounds: O(N log k), O(1) extra space for real linked lists.
+**Follow-up.** Q: Can you do it without a heap? A: Divide and conquer: merge lists in pairs (0+1, 2+3, ...) with the two-list merge, then merge the results, repeating until one list remains. Each round touches N nodes and there are log k rounds: O(N log k) time and O(1) extra space.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.deepEqual(mergeKLists([[1, 4, 5], [1, 3, 4], [2, 6]]), [1, 1, 2, 3, 4, 4, 5, 6]);
-assert.deepEqual(mergeKLists([]), []);
-assert.deepEqual(mergeKLists([[]]), []);
-assert.deepEqual(mergeKLists([[], [-1, 5], [], [0]]), [-1, 0, 5]);
-assert.deepEqual(mergeKLists([[2], [1]]), [1, 2]);
+assert.deepEqual(toArray(mergeKLists([fromArray([1, 4, 5]), fromArray([1, 3, 4]), fromArray([2, 6])])), [1, 1, 2, 3, 4, 4, 5, 6]);
+assert.equal(mergeKLists([]), null);
+assert.equal(mergeKLists([null]), null);
+assert.deepEqual(toArray(mergeKLists([null, fromArray([-1, 5]), null, fromArray([0])])), [-1, 0, 5]);
+const single = fromArray([2]);
+const merged = mergeKLists([single, fromArray([1])]);
+assert.deepEqual(toArray(merged), [1, 2]);
+assert.equal(merged!.next, single); // existing nodes are reused
 ```
 
 </details>
@@ -5195,7 +5218,7 @@ function leastInterval(tasks: string[], n: number): number {
 }
 ```
 
-**Why it works.** The most frequent task dictates the shape: it needs `maxCount - 1` gaps of `n` slots between its runs, giving `(maxCount - 1) * (n + 1)` slots plus one final slot for each task that ties for the max count. If there are enough other tasks to fill every gap, there is no idle time and the answer is just `tasks.length`, hence the `max`. O(N) time, O(1) space (26 letters). The simulation alternative (max-heap of counts plus a cooldown queue) is O(N log 26) and also accepted. Trap: forgetting the `tasks.length` lower bound.
+**Why it works.** The most frequent task dictates the shape: it needs `maxCount - 1` gaps of `n` slots between its runs, giving `(maxCount - 1) * (n + 1)` slots plus one final slot for each task that ties for the max count. Simulating the timeline slot by slot redoes the same choice each slot; the formula remembers only the max count and how many tasks tie for it. If there are enough other tasks to fill every gap, there is no idle time and the answer is just `tasks.length`, hence the `max`. O(N) time, O(1) space (26 letters). The simulation alternative (max-heap of counts plus a cooldown queue) is O(N log 26) and also accepted. Trap: forgetting the `tasks.length` lower bound.
 
 **Say it.** The most frequent task forces (maxCount minus one) frames of size n plus one, plus a last slot for each task tied at max; the answer is that or the number of tasks, whichever is larger. O(N) time.
 
@@ -5276,7 +5299,7 @@ function numIslands(grid: string[][]): number {
 }
 ```
 
-**Why it works.** Scan every cell; each unvisited land cell starts a new island, and a flood fill (DFS or BFS) marks all land connected to it so it is not counted again. Every cell is visited a constant number of times: O(m * n) time, O(m * n) space for the visited grid / stack. Mark cells as visited when you push them, not when you pop, or the same cell gets pushed many times. Union-find is an alternative, useful when land is added incrementally.
+**Why it works.** Scan every cell; each unvisited land cell starts a new island, and a flood fill (DFS or BFS) marks all land connected to it so it is not counted again. Without marking, a search started from each land cell would re-explore and re-count the same island; marking cells as visited remembers which land is already counted. Every cell is visited a constant number of times: O(m * n) time, O(m * n) space for the visited grid / stack. Mark cells as visited when you push them, not when you pop, or the same cell gets pushed many times. Union-find is an alternative, useful when land is added incrementally.
 
 **Say it.** I scan the grid and every time I hit unvisited land I count an island and flood-fill it so its cells aren't counted again. O(m times n) time and space.
 
@@ -5302,24 +5325,21 @@ assert.equal(numIslands([['1', '0', '1', '0', '1']]), 3);
 ---
 
 <a id="algo-067"></a>
-### algo-067. Max Area of Island
+### algo-067. Pacific Atlantic Water Flow
 
-*Graphs (grid DFS/BFS) · Medium*
+*Graphs (reverse multi-source DFS) · Medium*
 
-Given an `m x n` binary grid (`1` = land, `0` = water), return the area (number of cells) of the largest island, where land connects 4-directionally. Return `0` if there is no land.
+An `m x n` island has cell heights `heights[r][c]`. The Pacific ocean touches the top and left edges, the Atlantic touches the bottom and right edges. Rain water flows from a cell to a neighbour (up/down/left/right) whose height is **less than or equal**. Return every `[r, c]` from which water can reach **both** oceans (any order).
 
-```
-[[0,1,1,0],
- [0,1,0,0],
- [1,0,1,1]]  -> 3
-```
+- `[[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]` -> `[[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]`
+- `[[1]]` -> `[[0,0]]`
 
 **Starter**
 
 ```ts
-function maxAreaOfIsland(grid: number[][]): number {
+function pacificAtlantic(heights: number[][]): number[][] {
   // TODO
-  return 0;
+  return [];
 }
 ```
 
@@ -5327,51 +5347,75 @@ function maxAreaOfIsland(grid: number[][]): number {
 <summary>Solution</summary>
 
 ```ts
-function maxAreaOfIsland(grid: number[][]): number {
-  const rows = grid.length;
-  const cols = rows ? grid[0].length : 0;
-  const seen = grid.map((row) => row.map(() => false));
-  let best = 0;
+function pacificAtlantic(heights: number[][]): number[][] {
+  const R = heights.length;
+  const C = heights[0]?.length ?? 0;
+  if (R === 0 || C === 0) return [];
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (grid[r][c] !== 1 || seen[r][c]) continue;
-      let area = 0;
-      const stack: [number, number][] = [[r, c]];
-      seen[r][c] = true;
-      while (stack.length > 0) {
-        const [i, j] = stack.pop()!;
-        area++;
-        for (const [ni, nj] of [[i + 1, j], [i - 1, j], [i, j + 1], [i, j - 1]]) {
-          if (ni < 0 || nj < 0 || ni >= rows || nj >= cols) continue;
-          if (grid[ni][nj] !== 1 || seen[ni][nj]) continue;
-          seen[ni][nj] = true;
-          stack.push([ni, nj]);
-        }
+  // Mark every cell that can drain into the ocean touching `starts`,
+  // by walking from the ocean UPHILL (to neighbours at least as high).
+  const reach = (starts: [number, number][]): boolean[][] => {
+    const seen = Array.from({ length: R }, () => new Array<boolean>(C).fill(false));
+    const stack: [number, number][] = [];
+    for (const [r, c] of starts) {
+      if (!seen[r][c]) {
+        seen[r][c] = true;
+        stack.push([r, c]);
       }
-      best = Math.max(best, area);
     }
+    while (stack.length > 0) {
+      const [r, c] = stack.pop()!;
+      for (const [nr, nc] of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]]) {
+        if (nr < 0 || nc < 0 || nr >= R || nc >= C || seen[nr][nc]) continue;
+        if (heights[nr][nc] < heights[r][c]) continue; // water could not flow down from there to here
+        seen[nr][nc] = true;
+        stack.push([nr, nc]);
+      }
+    }
+    return seen;
+  };
+
+  const pacificStarts: [number, number][] = [];
+  const atlanticStarts: [number, number][] = [];
+  for (let r = 0; r < R; r++) {
+    pacificStarts.push([r, 0]);
+    atlanticStarts.push([r, C - 1]);
   }
-  return best;
+  for (let c = 0; c < C; c++) {
+    pacificStarts.push([0, c]);
+    atlanticStarts.push([R - 1, c]);
+  }
+  const pacific = reach(pacificStarts);
+  const atlantic = reach(atlanticStarts);
+
+  const res: number[][] = [];
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) if (pacific[r][c] && atlantic[r][c]) res.push([r, c]);
+  }
+  return res;
 }
 ```
 
-**Why it works.** Same flood fill as Number of Islands, but count the cells popped during each fill and keep the maximum. Each cell is visited once: O(m * n) time and space. Trap: marking cells visited only when popped double-counts cells reachable from two neighbours; mark on push.
+**Why it works.** Pattern: reverse the flow and run a multi-source DFS/BFS from the borders. Brute force starts a search from every cell to see whether it reaches each ocean: O((m * n)^2), because every search re-walks the same downhill paths. Insight: ask the opposite question. Start from all cells touching an ocean at once and climb to neighbours that are at least as high; every cell reached can drain into that ocean. One `seen` grid per ocean remembers the result for every cell, and the answer is the cells marked in both. O(m * n) time and space (each cell is visited at most once per ocean). Trap: when reversing the flow, the comparison flips: move from (r, c) to a neighbour only if the neighbour is >= the current height. Equal heights do flow.
 
-**Say it.** I flood-fill each unvisited island with an iterative DFS, counting cells as I go, and keep the largest count. O(m times n) time and space.
+**Say it.** Instead of searching from every cell down to the oceans, I search from the oceans up: a multi-source DFS from each ocean's border climbs to neighbours at least as high, and the answer is the cells both searches reach. O(m times n).
 
-**Follow-up.** Q: You may flip one 0 to 1; what's the largest island you can make? A: Label every island with an id and store its area, then for each 0 sum the areas of the distinct island ids among its 4 neighbours plus 1. O(m * n) (Making A Large Island).
+**Follow-up.** Q: Surrounded Regions: flip every 'O' region that does not touch the border to 'X'? A: Same border-first idea: DFS from every border 'O' and mark the cells it reaches as safe; afterwards flip every unmarked 'O' to 'X' and restore the safe ones. O(m * n).
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.equal(maxAreaOfIsland([[0, 1, 1, 0], [0, 1, 0, 0], [1, 0, 1, 1]]), 3);
-assert.equal(maxAreaOfIsland([[0, 0, 0, 0]]), 0);
-assert.equal(maxAreaOfIsland([[1, 1], [1, 1]]), 4);
-assert.equal(maxAreaOfIsland([[1, 0, 1], [0, 1, 0], [1, 0, 1]]), 1);
-assert.equal(maxAreaOfIsland([]), 0);
+const sorted = (cells: number[][]) => cells.map(([r, c]) => r * 1000 + c).sort((a, b) => a - b);
+assert.deepEqual(
+  sorted(pacificAtlantic([[1, 2, 2, 3, 5], [3, 2, 3, 4, 4], [2, 4, 5, 3, 1], [6, 7, 1, 4, 5], [5, 1, 1, 2, 4]])),
+  sorted([[0, 4], [1, 3], [1, 4], [2, 2], [3, 0], [3, 1], [4, 0]]),
+);
+assert.deepEqual(pacificAtlantic([[1]]), [[0, 0]]);
+assert.deepEqual(sorted(pacificAtlantic([[1, 2], [4, 3]])), sorted([[0, 1], [1, 0], [1, 1]]));
+assert.deepEqual(sorted(pacificAtlantic([[2, 2], [2, 2]])), sorted([[0, 0], [0, 1], [1, 0], [1, 1]]));
+assert.deepEqual(pacificAtlantic([]), []);
 ```
 
 </details>
@@ -5458,7 +5502,7 @@ function toAdjacency(start: GraphNode | null): number[][] {
 }
 ```
 
-**Why it works.** Traverse the graph (DFS or BFS) while keeping a map from each original node to its copy. When you meet a node that is already in the map, reuse its copy; this both preserves shared structure and stops infinite loops on cycles. O(V + E) time, O(V) space for the map and recursion. Trap: inserting the copy into the map after cloning the neighbours, which recurses forever on a cycle.
+**Why it works.** Traverse the graph (DFS or BFS) while keeping a map from each original node to its copy. Copying recursively without a map creates a new copy every time a node is reached again (and loops forever on cycles); the original-to-copy map remembers each copy so it is built once. When you meet a node that is already in the map, reuse its copy; this both preserves shared structure and stops infinite loops on cycles. O(V + E) time, O(V) space for the map and recursion. Trap: inserting the copy into the map after cloning the neighbours, which recurses forever on a cycle.
 
 **Say it.** I DFS the graph with a map from original node to clone; I create and register the clone before visiting neighbours, so cycles just return the existing copy. O(V plus E) time, O(V) space.
 
@@ -5531,7 +5575,7 @@ function canFinish(numCourses: number, prerequisites: number[][]): boolean {
 }
 ```
 
-**Why it works.** Courses are nodes and prerequisites are directed edges; all courses can be finished exactly when the graph has no cycle. Kahn's algorithm repeatedly removes nodes with in-degree 0; if a cycle exists, its nodes never reach in-degree 0, so fewer than `numCourses` get processed. O(V + E) time and space. The alternative is DFS with three colours (unvisited / visiting / done), where reaching a "visiting" node means a cycle. Trap: getting the edge direction backwards is harmless for cycle detection but breaks the ordering in Course Schedule II.
+**Why it works.** Courses are nodes and prerequisites are directed edges; all courses can be finished exactly when the graph has no cycle. Brute force rescans all courses each round to find one with no unmet prerequisites (O(V * (V + E))); Kahn's algorithm remembers each course's remaining in-degree, so a course is queued the moment it reaches 0. Kahn's algorithm repeatedly removes nodes with in-degree 0; if a cycle exists, its nodes never reach in-degree 0, so fewer than `numCourses` get processed. O(V + E) time and space. The alternative is DFS with three colours (unvisited / visiting / done), where reaching a "visiting" node means a cycle. Trap: getting the edge direction backwards is harmless for cycle detection but breaks the ordering in Course Schedule II.
 
 **Say it.** I build a directed graph and run Kahn's topological sort: start with courses that have no prerequisites, peel them off, and if I can't process every course there must be a cycle. O(V plus E).
 
@@ -5599,7 +5643,7 @@ function findOrder(numCourses: number, prerequisites: number[][]): number[] {
 }
 ```
 
-**Why it works.** Kahn's topological sort: the order in which zero-in-degree nodes are dequeued is a valid course order. If some nodes never reach in-degree 0 there is a cycle and you return `[]`. O(V + E) time and space. DFS alternative: append each node after all its dependents finish (post-order) and reverse the list, while using colours to detect cycles. Trap: edges must point from prerequisite to course (`pre -> course`), or the order comes out reversed.
+**Why it works.** Kahn's topological sort: the order in which zero-in-degree nodes are dequeued is a valid course order. Rescanning every course for one whose prerequisites are all taken is O(V * (V + E)); remembering in-degrees makes each edge be processed once. If some nodes never reach in-degree 0 there is a cycle and you return `[]`. O(V + E) time and space. DFS alternative: append each node after all its dependents finish (post-order) and reverse the list, while using colours to detect cycles. Trap: edges must point from prerequisite to course (`pre -> course`), or the order comes out reversed.
 
 **Say it.** I run Kahn's algorithm with edges from prerequisite to course; the dequeue order is the answer, and if it doesn't include every course there's a cycle so I return empty. O(V plus E).
 
@@ -5877,7 +5921,7 @@ function countComponents(n: number, edges: number[][]): number {
 }
 ```
 
-**Why it works.** Start with `n` components and union the endpoints of every edge; each union that merges two different roots reduces the count by one. With path compression (here path halving) and union by rank, each operation is nearly O(1) (inverse Ackermann), so the total is O(n + E * alpha(n)) time and O(n) space. DFS/BFS over an adjacency list is also O(n + E) and equally accepted. Trap: decrementing the count for edges whose endpoints are already connected.
+**Why it works.** Start with `n` components and union the endpoints of every edge; each union that merges two different roots reduces the count by one. Running a fresh BFS/DFS per edge or per query re-walks the same components; union-find remembers each component as a root, so a merge or lookup is nearly O(1). With path compression (here path halving) and union by rank, each operation is nearly O(1) (inverse Ackermann), so the total is O(n + E * alpha(n)) time and O(n) space. DFS/BFS over an adjacency list is also O(n + E) and equally accepted. Trap: decrementing the count for edges whose endpoints are already connected.
 
 **Say it.** I use union-find: start with n components and for each edge union the two roots, decrementing the count only when they were different. With path compression and union by rank it's nearly linear.
 
@@ -6156,7 +6200,7 @@ function combinationSum(candidates: number[], target: number): number[][] {
 }
 ```
 
-**Why it works.** Backtrack over candidates in a fixed order, passing the same start index `i` when recursing so a number can be reused but earlier numbers are never revisited; that ordering is what prevents duplicates like `[2,3,2]`. Sorting lets you break the loop as soon as a candidate exceeds the remaining sum. Time is exponential, roughly O(n^(T/m)) where T is the target and m the smallest candidate; space O(T/m) for the recursion depth. Trap: recursing with `i + 1` (forbids reuse) or `0` (produces permutations of the same combination).
+**Why it works.** Backtrack over candidates in a fixed order, passing the same start index `i` when recursing so a number can be reused but earlier numbers are never revisited; that ordering is what prevents duplicates like `[2,3,2]`. Generating every multiset and then filtering by sum explores branches that already exceed the target; sorting lets the loop stop at the first candidate that is too big, and the start index remembers which candidates are still allowed. Sorting lets you break the loop as soon as a candidate exceeds the remaining sum. Time is exponential, roughly O(n^(T/m)) where T is the target and m the smallest candidate; space O(T/m) for the recursion depth. Trap: recursing with `i + 1` (forbids reuse) or `0` (produces permutations of the same combination).
 
 **Say it.** I backtrack with a start index, recursing with the same index so a number can repeat, and since the candidates are sorted I stop the loop once a number exceeds what's left. Exponential time, depth bounded by target over the smallest candidate.
 
@@ -6290,7 +6334,7 @@ function exist(board: string[][], word: string): boolean {
 }
 ```
 
-**Why it works.** Try every cell as a starting point and DFS to neighbours matching the next character, temporarily marking the cell so it cannot be reused on the current path and restoring it on the way back. Worst case O(m * n * 3^L) time (after the first step each cell has at most 3 unvisited directions), O(L) recursion space where L is the word length. Trap: using a global visited set that is never un-marked, which wrongly blocks cells for other paths. Pruning: return false early if the board lacks enough of some letter.
+**Why it works.** Try every cell as a starting point and DFS to neighbours matching the next character, temporarily marking the cell so it cannot be reused on the current path and restoring it on the way back. Collecting every path on the board and comparing it with the word explores paths that already mismatch; the DFS checks one character per step and abandons a path at the first mismatch. Worst case O(m * n * 3^L) time (after the first step each cell has at most 3 unvisited directions), O(L) recursion space where L is the word length. Trap: using a global visited set that is never un-marked, which wrongly blocks cells for other paths. Pruning: return false early if the board lacks enough of some letter.
 
 **Say it.** From each cell I DFS along matching letters, marking a cell as used while it's on the current path and restoring it when I backtrack. That's O(m times n times 3 to the L) worst case.
 
@@ -6319,22 +6363,22 @@ assert.deepEqual(b, mk()); // board restored
 ---
 
 <a id="algo-080"></a>
-### algo-080. Letter Combinations of a Phone Number
+### algo-080. Longest Increasing Path in a Matrix
 
-*Backtracking · Medium*
+*DFS + memoization (DP on a DAG) · Hard*
 
-Given a string of digits `2-9`, return all letter combinations the number could represent on a phone keypad (2 = abc, 3 = def, 4 = ghi, 5 = jkl, 6 = mno, 7 = pqrs, 8 = tuv, 9 = wxyz). Any order.
+Given an `m x n` integer matrix, return the length of the longest **strictly increasing** path. From a cell you may move up, down, left or right (no diagonals, no wrapping).
 
-- `"23"` -> `["ad","ae","af","bd","be","bf","cd","ce","cf"]`
-- `""` -> `[]`
-- `"2"` -> `["a","b","c"]`
+- `[[9,9,4],[6,6,8],[2,1,1]]` -> `4` (1 -> 2 -> 6 -> 9)
+- `[[3,4,5],[3,2,6],[2,2,1]]` -> `4` (3 -> 4 -> 5 -> 6)
+- `[[1]]` -> `1`
 
 **Starter**
 
 ```ts
-function letterCombinations(digits: string): string[] {
+function longestIncreasingPath(matrix: number[][]): number {
   // TODO
-  return [];
+  return 0;
 }
 ```
 
@@ -6342,42 +6386,49 @@ function letterCombinations(digits: string): string[] {
 <summary>Solution</summary>
 
 ```ts
-const KEYPAD: Record<string, string> = {
-  '2': 'abc', '3': 'def', '4': 'ghi', '5': 'jkl',
-  '6': 'mno', '7': 'pqrs', '8': 'tuv', '9': 'wxyz',
-};
+function longestIncreasingPath(matrix: number[][]): number {
+  const R = matrix.length;
+  const C = matrix[0]?.length ?? 0;
+  // memo[r][c] = longest increasing path starting at (r, c); 0 = not computed yet.
+  const memo = Array.from({ length: R }, () => new Array<number>(C).fill(0));
 
-function letterCombinations(digits: string): string[] {
-  if (digits.length === 0) return [];
-  const result: string[] = [];
-  const build = (i: number, current: string): void => {
-    if (i === digits.length) {
-      result.push(current);
-      return;
+  const dfs = (r: number, c: number): number => {
+    if (memo[r][c] !== 0) return memo[r][c];
+    let best = 1;
+    for (const [nr, nc] of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]]) {
+      if (nr >= 0 && nc >= 0 && nr < R && nc < C && matrix[nr][nc] > matrix[r][c]) {
+        best = Math.max(best, 1 + dfs(nr, nc));
+      }
     }
-    for (const ch of KEYPAD[digits[i]]) build(i + 1, current + ch);
+    memo[r][c] = best;
+    return best;
   };
-  build(0, '');
-  return result;
+
+  let ans = 0;
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) ans = Math.max(ans, dfs(r, c));
+  }
+  return ans;
 }
 ```
 
-**Why it works.** Each digit is one level of the recursion tree, and each letter on that key is a branch; leaves at depth `digits.length` are the answers. With up to 4 letters per key, there are O(4^n) combinations of length n, so O(n * 4^n) time and O(n) recursion depth. Trap: the empty input must return `[]`, not `[""]`. An iterative BFS that extends every partial string by each letter of the next digit works equally well.
+**Why it works.** Pattern: DFS + memoization, which is DP on a directed acyclic graph. Brute force runs a DFS from every cell over every increasing path: exponential, because the longest path from a cell is recomputed every time another path walks into that cell. Insight: moves only go to strictly larger values, so the graph has no cycles. That means no visited set is needed, and the best path starting at a cell never depends on how you got there, so remember it in `memo[r][c]` and reuse it. Each cell is solved once with 4 neighbour checks: O(m * n) time and space (recursion depth up to m * n on a snake-shaped matrix). Alternative: topological peeling (BFS that removes cells with no larger neighbour, layer by layer); the number of layers is the answer. Trap: copying Word Search and adding a visited set (unneeded here), or using `>=`, which allows equal neighbours and creates cycles.
 
-**Say it.** I recurse digit by digit and branch on every letter for that key, adding the string when I reach the end; with up to 4 letters per digit that's O(n times 4 to the n).
+**Say it.** Strictly increasing moves can't loop, so the grid is a DAG: the longest path from a cell is always the same, and I memoize it in a DFS: 1 plus the best of its larger neighbours. Each cell is computed once, O(m times n).
 
-**Follow-up.** Q: Can you do it iteratively? A: Start with `['']` and for each digit replace the list with every existing prefix extended by each of that digit's letters. Same complexity, no recursion.
+**Follow-up.** Q: The matrix is huge and recursion would overflow the stack. A: Use the iterative version: compute each cell's out-degree (number of larger neighbours), start a BFS from cells with out-degree 0, remove them layer by layer (decrementing smaller neighbours' out-degree), and count the layers. O(m * n), no recursion.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.deepEqual(letterCombinations('23').sort(), ['ad', 'ae', 'af', 'bd', 'be', 'bf', 'cd', 'ce', 'cf']);
-assert.deepEqual(letterCombinations(''), []);
-assert.deepEqual(letterCombinations('2'), ['a', 'b', 'c']);
-assert.equal(letterCombinations('79').length, 16);
-assert.equal(letterCombinations('234').length, 27);
+assert.equal(longestIncreasingPath([[9, 9, 4], [6, 6, 8], [2, 1, 1]]), 4);
+assert.equal(longestIncreasingPath([[3, 4, 5], [3, 2, 6], [2, 2, 1]]), 4);
+assert.equal(longestIncreasingPath([[1]]), 1);
+assert.equal(longestIncreasingPath([]), 0);
+assert.equal(longestIncreasingPath([[1, 2, 3], [6, 5, 4], [7, 8, 9]]), 9);
+assert.equal(longestIncreasingPath([[7, 7], [7, 7]]), 1);
 ```
 
 </details>
@@ -6484,7 +6535,7 @@ function rob(nums: number[]): number {
 
 **Say it.** At each house I choose the better of skipping it or robbing it plus the best total two houses back; I only keep two rolling values, so O(n) time and O(1) space.
 
-**Follow-up.** Q: Can you also return which houses were robbed? A: Keep the full `dp` array, then walk backwards from the end: if `dp[i] === dp[i - 1]` house i was skipped, otherwise it was robbed and you jump to `i - 2`.
+**Follow-up.** Q: The houses stand in a circle, so the first and last are neighbours (House Robber II)? A: They cannot both be robbed, so run the linear DP twice, on `nums[0..n-2]` and on `nums[1..n-1]`, and take the larger result; a single house returns `nums[0]`. Still O(n) time, O(1) space.
 
 <details>
 <summary>Tests</summary>
@@ -6505,22 +6556,35 @@ assert.equal(rob([5]), 5);
 ---
 
 <a id="algo-083"></a>
-### algo-083. House Robber II
+### algo-083. Construct Binary Tree from Preorder and Inorder Traversal
 
-*Dynamic programming (1D) · Medium*
+*Trees (divide and conquer) · Medium*
 
-Same as House Robber, but the houses are arranged in a **circle**: the first and last houses are adjacent. Return the maximum amount you can rob without robbing two adjacent houses.
+Given the `preorder` and `inorder` traversals of a binary tree with **unique** values, build the tree and return its root.
 
-- `[2,3,2]` -> `3`
-- `[1,2,3,1]` -> `4`
-- `[1,2,3]` -> `3`
+- `preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]` -> `[3,9,20,null,null,15,7]`
+- `preorder = [-1], inorder = [-1]` -> `[-1]`
+
+(Trees are shown in LeetCode level order.)
 
 **Starter**
 
 ```ts
-function rob(nums: number[]): number {
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
+}
+
+
+function buildTree(preorder: number[], inorder: number[]): TreeNode | null {
   // TODO
-  return 0;
+  return null;
 }
 ```
 
@@ -6528,40 +6592,94 @@ function rob(nums: number[]): number {
 <summary>Solution</summary>
 
 ```ts
-function robLine(nums: number[], start: number, end: number): number {
-  let skipPrev = 0;
-  let takePrev = 0;
-  for (let i = start; i <= end; i++) {
-    [skipPrev, takePrev] = [takePrev, Math.max(takePrev, skipPrev + nums[i])];
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
-  return takePrev;
 }
 
-function rob(nums: number[]): number {
-  const n = nums.length;
-  if (n === 0) return 0;
-  if (n === 1) return nums[0];
-  // First and last can't both be robbed: solve without the last, and without the first.
-  return Math.max(robLine(nums, 0, n - 2), robLine(nums, 1, n - 1));
+// Build a tree from LeetCode-style level-order array (null = missing child).
+function fromArray(values: (number | null)[]): TreeNode | null {
+  if (values.length === 0 || values[0] === null) return null;
+  const root = new TreeNode(values[0]);
+  const queue: TreeNode[] = [root];
+  let head = 0;
+  let i = 1;
+  while (i < values.length) {
+    const node = queue[head++];
+    const l = values[i++];
+    if (l !== undefined && l !== null) {
+      node.left = new TreeNode(l);
+      queue.push(node.left);
+    }
+    const r = values[i++];
+    if (r !== undefined && r !== null) {
+      node.right = new TreeNode(r);
+      queue.push(node.right);
+    }
+  }
+  return root;
+}
+
+// Level-order array with nulls for missing children, trailing nulls trimmed.
+function toArray(root: TreeNode | null): (number | null)[] {
+  const out: (number | null)[] = [];
+  const queue: (TreeNode | null)[] = [root];
+  for (let h = 0; h < queue.length; h++) {
+    const node = queue[h];
+    if (node === null) {
+      out.push(null);
+      continue;
+    }
+    out.push(node.val);
+    queue.push(node.left, node.right);
+  }
+  while (out.length > 0 && out[out.length - 1] === null) out.pop();
+  return out;
+}
+
+
+function buildTree(preorder: number[], inorder: number[]): TreeNode | null {
+  const pos = new Map<number, number>(); // value -> index in inorder
+  inorder.forEach((v, i) => pos.set(v, i));
+  let next = 0; // next preorder value is the root of the subtree being built
+
+  // Build the subtree whose values are inorder[lo..hi].
+  const build = (lo: number, hi: number): TreeNode | null => {
+    if (lo > hi) return null;
+    const val = preorder[next++];
+    const mid = pos.get(val)!;
+    const node = new TreeNode(val);
+    node.left = build(lo, mid - 1); // left first: preorder lists the whole left subtree before the right
+    node.right = build(mid + 1, hi);
+    return node;
+  };
+  return build(0, inorder.length - 1);
 }
 ```
 
-**Why it works.** The circle only adds one constraint: house 0 and house n-1 cannot both be robbed. So the answer is the better of two linear House Robber runs, one on `nums[0..n-2]` and one on `nums[1..n-1]`. O(n) time, O(1) space. Trap: the single-house case, where both ranges would be empty, must return `nums[0]`.
+**Why it works.** Pattern: divide and conquer on traversal order. Preorder gives the root first; the root's position in inorder splits the remaining values into the left subtree (before it) and the right subtree (after it). Brute force finds the root with `indexOf` and slices both arrays for every subtree: O(n^2), because it scans and copies the inorder array again at every node. Instead, remember each value's inorder index in a hash map and pass index bounds; one shared preorder pointer hands out roots in order, since preorder lists the whole left subtree before the right one. O(n) time, O(n) space (map + recursion). Trap: building the right subtree before the left one breaks the shared pointer; duplicate values make the split ambiguous.
 
-**Say it.** Since the first and last houses can't both be robbed, I run the linear house robber twice, once excluding the last house and once excluding the first, and take the max. O(n) time, O(1) space.
+**Say it.** The first preorder value is the root, and its index in inorder splits left and right subtrees. I store value-to-index in a map, keep one pointer into preorder, and recurse on index ranges, left before right. O(n).
 
-**Follow-up.** Q: What if the houses form a binary tree (a parent and child can't both be robbed)? A: DFS returning a pair `[robThis, skipThis]` for each node: `robThis = val + left.skip + right.skip`, `skipThis = max(left) + max(right)`. O(n) (House Robber III).
+**Follow-up.** Q: What about inorder + postorder? A: Postorder ends with the root, so consume postorder from the end and build the right subtree before the left. Preorder + postorder alone does not identify a general binary tree uniquely (only a full one).
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.equal(rob([2, 3, 2]), 3);
-assert.equal(rob([1, 2, 3, 1]), 4);
-assert.equal(rob([1, 2, 3]), 3);
-assert.equal(rob([7]), 7);
-assert.equal(rob([200, 3, 140, 20, 10]), 340);
+assert.deepEqual(toArray(buildTree([3, 9, 20, 15, 7], [9, 3, 15, 20, 7])), [3, 9, 20, null, null, 15, 7]);
+assert.deepEqual(toArray(buildTree([-1], [-1])), [-1]);
+assert.equal(buildTree([], []), null);
+assert.deepEqual(toArray(buildTree([3, 2, 1], [1, 2, 3])), [3, 2, null, 1]);
+assert.deepEqual(toArray(buildTree([1, 2, 3], [1, 2, 3])), [1, null, 2, null, 3]);
+assert.deepEqual(toArray(buildTree([1, 2, 4, 5, 3, 6], [4, 2, 5, 1, 6, 3])), [1, 2, 3, 4, 5, 6]);
 ```
 
 </details>
@@ -7220,85 +7338,32 @@ assert.equal(canJump([1, 1, 0, 1]), false);
 ---
 
 <a id="algo-094"></a>
-### algo-094. Gas Station
+### algo-094. Binary Tree Maximum Path Sum
 
-*Greedy · Medium*
+*Trees (DFS: return one, record another) · Hard*
 
-There are `n` gas stations on a circular route. Station `i` has `gas[i]` fuel, and driving from station `i` to `i + 1` costs `cost[i]`. You start with an empty tank. Return the starting station index that lets you travel around the circuit once clockwise, or `-1` if none. The answer is guaranteed unique if it exists.
+A path is a sequence of nodes where each adjacent pair is connected by an edge; a node appears at most once and the path does not need to pass through the root. Given a non-empty binary tree (values may be negative), return the maximum sum of any path.
 
-- `gas = [1,2,3,4,5], cost = [3,4,5,1,2]` -> `3`
-- `gas = [2,3,4], cost = [3,4,3]` -> `-1`
+- `[1,2,3]` -> `6` (2 -> 1 -> 3)
+- `[-10,9,20,null,null,15,7]` -> `42` (15 -> 20 -> 7)
+- `[-3]` -> `-3`
 
 **Starter**
 
 ```ts
-function canCompleteCircuit(gas: number[], cost: number[]): number {
-  // TODO
-  return -1;
-}
-```
-
-<details>
-<summary>Solution</summary>
-
-```ts
-function canCompleteCircuit(gas: number[], cost: number[]): number {
-  let total = 0; // net fuel over the whole loop
-  let tank = 0;  // net fuel since the current candidate start
-  let start = 0;
-  for (let i = 0; i < gas.length; i++) {
-    const diff = gas[i] - cost[i];
-    total += diff;
-    tank += diff;
-    if (tank < 0) {
-      // No station in [start, i] can be a valid start: try i + 1.
-      start = i + 1;
-      tank = 0;
-    }
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
-  return total >= 0 ? start : -1;
 }
-```
 
-**Why it works.** Two facts: if total gas is less than total cost no start works; and if you run dry going from `start` to `i`, no station between them can work either (each started with a non-negative surplus that still was not enough), so jump the candidate to `i + 1`. Simulating from every start is O(n^2); this single pass is O(n) time, O(1) space. Trap: forgetting the global `total >= 0` check, which is what guarantees the final candidate actually completes the loop.
 
-**Say it.** If total gas is at least total cost a solution exists; I scan once with a running tank, and whenever it goes negative I move the start to the next station, because nothing in between could work. O(n), O(1).
-
-**Follow-up.** Q: Why does the last candidate always work when total >= 0? A: The segment from `start` to the end has a non-negative tank, and the segment before `start` has a total deficit no larger than what the total surplus covers, so carrying the surplus around the wrap-around covers it.
-
-<details>
-<summary>Tests</summary>
-
-```ts
-import assert from 'node:assert/strict';
-assert.equal(canCompleteCircuit([1, 2, 3, 4, 5], [3, 4, 5, 1, 2]), 3);
-assert.equal(canCompleteCircuit([2, 3, 4], [3, 4, 3]), -1);
-assert.equal(canCompleteCircuit([5], [4]), 0);
-assert.equal(canCompleteCircuit([5, 1, 2, 3, 4], [4, 4, 1, 5, 1]), 4);
-assert.equal(canCompleteCircuit([3, 1, 1], [1, 2, 2]), 0);
-```
-
-</details>
-
-</details>
-
----
-
-<a id="algo-095"></a>
-### algo-095. Best Time to Buy and Sell Stock II
-
-*Greedy · Easy*
-
-`prices[i]` is a stock's price on day `i`. You may buy and sell as many times as you like but hold at most one share at a time (you can sell and buy again on the same day). Return the maximum profit.
-
-- `[7,1,5,3,6,4]` -> `7` (buy 1 sell 5, buy 3 sell 6)
-- `[1,2,3,4,5]` -> `4`
-- `[7,6,4,3,1]` -> `0`
-
-**Starter**
-
-```ts
-function maxProfit(prices: number[]): number {
+function maxPathSum(root: TreeNode | null): number {
   // TODO
   return 0;
 }
@@ -7308,32 +7373,239 @@ function maxProfit(prices: number[]): number {
 <summary>Solution</summary>
 
 ```ts
-function maxProfit(prices: number[]): number {
-  let profit = 0;
-  for (let i = 1; i < prices.length; i++) {
-    // Collect every upward move; a long rise equals the sum of its daily rises.
-    if (prices[i] > prices[i - 1]) profit += prices[i] - prices[i - 1];
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
-  return profit;
+}
+
+// Build a tree from LeetCode-style level-order array (null = missing child).
+function fromArray(values: (number | null)[]): TreeNode | null {
+  if (values.length === 0 || values[0] === null) return null;
+  const root = new TreeNode(values[0]);
+  const queue: TreeNode[] = [root];
+  let head = 0;
+  let i = 1;
+  while (i < values.length) {
+    const node = queue[head++];
+    const l = values[i++];
+    if (l !== undefined && l !== null) {
+      node.left = new TreeNode(l);
+      queue.push(node.left);
+    }
+    const r = values[i++];
+    if (r !== undefined && r !== null) {
+      node.right = new TreeNode(r);
+      queue.push(node.right);
+    }
+  }
+  return root;
+}
+
+// Level-order array with nulls for missing children, trailing nulls trimmed.
+function toArray(root: TreeNode | null): (number | null)[] {
+  const out: (number | null)[] = [];
+  const queue: (TreeNode | null)[] = [root];
+  for (let h = 0; h < queue.length; h++) {
+    const node = queue[h];
+    if (node === null) {
+      out.push(null);
+      continue;
+    }
+    out.push(node.val);
+    queue.push(node.left, node.right);
+  }
+  while (out.length > 0 && out[out.length - 1] === null) out.pop();
+  return out;
+}
+
+
+function maxPathSum(root: TreeNode | null): number {
+  let best = -Infinity;
+  // Returns the best sum of a path that starts at n and goes DOWN one side.
+  const gain = (n: TreeNode | null): number => {
+    if (n === null) return 0;
+    const left = Math.max(0, gain(n.left)); // a negative branch is better dropped
+    const right = Math.max(0, gain(n.right));
+    best = Math.max(best, n.val + left + right); // path that bends at n
+    return n.val + Math.max(left, right); // the parent can extend only one side
+  };
+  gain(root);
+  return best;
 }
 ```
 
-**Why it works.** With unlimited transactions, the best you can do is capture every price increase: any rise from day a to day b equals the sum of the day-to-day rises in between, so summing all positive daily differences is optimal. Trying all buy/sell combinations is exponential; the greedy is O(n) time, O(1) space. Equivalent DP: track `hold` and `cash` states per day. Trap: confusing it with the single-transaction version (track min price so far).
+**Why it works.** Pattern: post-order DFS that returns one thing and records another (same shape as Diameter of Binary Tree). Every path has one highest node where it bends. Brute force tries every pair of end nodes and sums the path between them: O(n^2) paths, each walk O(n), recomputing the same downward sums many times. Instead, each node computes its best downward gain once from its children's gains (clamped at 0, so a negative branch is dropped) and the DFS records `val + leftGain + rightGain` as a candidate for the path bending there. O(n) time, O(h) space. Traps: returning the bent path to the parent (a path cannot fork); starting `best` at 0 instead of -Infinity, which is wrong for an all-negative tree.
 
-**Say it.** Since I can trade unlimited times, I just add up every positive day-to-day difference, which equals the profit from buying at every valley and selling at every peak. O(n) time, O(1) space.
+**Say it.** Every path bends at one highest node. A post-order DFS returns each node's best downward gain, its value plus the better child gain clamped at zero, and at each node I update a global with value plus both clamped gains. O(n) time, O(h) space.
 
-**Follow-up.** Q: Each sale now costs a fixed fee. A: Greedy no longer works directly; use the two-state DP: `cash = max(cash, hold + price - fee)`, `hold = max(hold, cash - price)`. O(n), O(1).
+**Follow-up.** Q: Return the path's nodes, not just the sum? A: Have the DFS also return which child gave the best gain (or the node list of the best downward path), and when the global best is updated, store the node plus both chosen downward chains; join left chain reversed + node + right chain at the end.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.equal(maxProfit([7, 1, 5, 3, 6, 4]), 7);
-assert.equal(maxProfit([1, 2, 3, 4, 5]), 4);
-assert.equal(maxProfit([7, 6, 4, 3, 1]), 0);
-assert.equal(maxProfit([]), 0);
-assert.equal(maxProfit([3, 3, 5, 0, 0, 3, 1, 4]), 8);
+assert.equal(maxPathSum(fromArray([1, 2, 3])), 6);
+assert.equal(maxPathSum(fromArray([-10, 9, 20, null, null, 15, 7])), 42);
+assert.equal(maxPathSum(fromArray([-3])), -3);
+assert.equal(maxPathSum(fromArray([2, -1])), 2);
+assert.equal(maxPathSum(fromArray([-2, -1])), -1);
+assert.equal(maxPathSum(fromArray([5, 4, 8, 11, null, 13, 4, 7, 2, null, null, null, 1])), 48);
+```
+
+</details>
+
+</details>
+
+---
+
+<a id="algo-095"></a>
+### algo-095. Serialize and Deserialize Binary Tree
+
+*Trees (serialization) · Hard*
+
+Design `serialize(root)` that turns a binary tree into a string and `deserialize(data)` that rebuilds the exact same tree from that string. Any format works, as long as `deserialize(serialize(t))` has the same shape and values as `t`. Values can be negative and have several digits.
+
+- `[1,2,3,null,null,4,5]` -> e.g. `"1,2,#,#,3,4,#,#,5,#,#"` -> `[1,2,3,null,null,4,5]`
+- `[]` -> `"#"` -> `[]`
+
+**Starter**
+
+```ts
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
+}
+
+
+function serialize(root: TreeNode | null): string {
+  // TODO
+  return '';
+}
+
+function deserialize(data: string): TreeNode | null {
+  // TODO
+  return null;
+}
+```
+
+<details>
+<summary>Solution</summary>
+
+```ts
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
+}
+
+// Build a tree from LeetCode-style level-order array (null = missing child).
+function fromArray(values: (number | null)[]): TreeNode | null {
+  if (values.length === 0 || values[0] === null) return null;
+  const root = new TreeNode(values[0]);
+  const queue: TreeNode[] = [root];
+  let head = 0;
+  let i = 1;
+  while (i < values.length) {
+    const node = queue[head++];
+    const l = values[i++];
+    if (l !== undefined && l !== null) {
+      node.left = new TreeNode(l);
+      queue.push(node.left);
+    }
+    const r = values[i++];
+    if (r !== undefined && r !== null) {
+      node.right = new TreeNode(r);
+      queue.push(node.right);
+    }
+  }
+  return root;
+}
+
+// Level-order array with nulls for missing children, trailing nulls trimmed.
+function toArray(root: TreeNode | null): (number | null)[] {
+  const out: (number | null)[] = [];
+  const queue: (TreeNode | null)[] = [root];
+  for (let h = 0; h < queue.length; h++) {
+    const node = queue[h];
+    if (node === null) {
+      out.push(null);
+      continue;
+    }
+    out.push(node.val);
+    queue.push(node.left, node.right);
+  }
+  while (out.length > 0 && out[out.length - 1] === null) out.pop();
+  return out;
+}
+
+
+// Preorder with '#' for every missing child, comma-separated.
+function serialize(root: TreeNode | null): string {
+  const out: string[] = [];
+  const walk = (n: TreeNode | null): void => {
+    if (n === null) {
+      out.push('#');
+      return;
+    }
+    out.push(String(n.val));
+    walk(n.left);
+    walk(n.right);
+  };
+  walk(root);
+  return out.join(',');
+}
+
+function deserialize(data: string): TreeNode | null {
+  const tokens = data.split(',');
+  let i = 0; // shared cursor: each call consumes exactly its own subtree's tokens
+  const build = (): TreeNode | null => {
+    const t = tokens[i++];
+    if (t === '#') return null;
+    const n = new TreeNode(Number(t));
+    n.left = build();
+    n.right = build();
+    return n;
+  };
+  return build();
+}
+```
+
+**Why it works.** Pattern: preorder DFS with explicit null markers, rebuilt by a recursive parser with one shared cursor. Preorder values alone are ambiguous (`[1,2]` and `[1,null,2]` both give "1,2"); writing '#' for every missing child records the shape, so each token tells the builder exactly when a subtree ends. A tempting version stores two traversals (preorder + inorder) and rebuilds with `indexOf`, which re-scans the array at every node (O(n^2)) and breaks on duplicate values; the markers remember the structure itself, so decoding reads tokens left to right once. O(n) time and O(n) space for both directions. Traps: a separator is required for multi-digit and negative values; recursion depth equals the tree height, so a very deep skewed tree needs the iterative level-order (BFS) format instead.
+
+**Say it.** I serialize in preorder and write a marker for every null child, so the string encodes the shape; deserialize reads the tokens with one shared index: a marker returns null, otherwise I create the node and recursively build left then right. O(n) both ways.
+
+**Follow-up.** Q: How does this help with Subtree of Another Tree? A: Serialize both trees with null markers and a separator before every value (",4,1,#,#,2,#,#"), then check whether the subtree's string occurs in the big tree's string with KMP: O(m + n). The leading separator stops "2" from matching inside "12".
+
+<details>
+<summary>Tests</summary>
+
+```ts
+import assert from 'node:assert/strict';
+const t = fromArray([1, 2, 3, null, null, 4, 5]);
+assert.equal(serialize(t), '1,2,#,#,3,4,#,#,5,#,#');
+assert.deepEqual(toArray(deserialize(serialize(t))), [1, 2, 3, null, null, 4, 5]);
+assert.equal(serialize(null), '#');
+assert.equal(deserialize('#'), null);
+assert.deepEqual(toArray(deserialize(serialize(fromArray([-10, 200, null, 3])))), [-10, 200, null, 3]);
+assert.notEqual(serialize(fromArray([1, 2])), serialize(fromArray([1, null, 2])));
 ```
 
 </details>
@@ -7451,31 +7723,21 @@ assert.equal(t.search('apples'), false);
 ---
 
 <a id="algo-097"></a>
-### algo-097. Design Add and Search Words Data Structure
+### algo-097. Word Search II
 
-*Trie + DFS · Medium*
+*Trie + backtracking · Hard*
 
-Design `WordDictionary` with:
-- `addWord(word)` - adds a word.
-- `search(word)` - `true` if any added word matches; `word` may contain `.` which matches **any one** letter.
+Given an `m x n` board of letters and a list of distinct `words`, return every word that can be formed on the board (any order). A word is built from sequentially adjacent cells (up/down/left/right), and one cell may not be used twice in the same word.
 
-```
-addWord("bad"); addWord("dad"); addWord("mad")
-search("pad") -> false; search("bad") -> true
-search(".ad") -> true;  search("b..") -> true
-```
+- `board = [["o","a","a","n"],["e","t","a","e"],["i","h","k","r"],["i","f","l","v"]], words = ["oath","pea","eat","rain"]` -> `["eat","oath"]`
+- `board = [["a","b"],["c","d"]], words = ["abcb"]` -> `[]`
 
 **Starter**
 
 ```ts
-class WordDictionary {
-  addWord(word: string): void {
-    // TODO
-  }
-  search(word: string): boolean {
-    // TODO
-    return false;
-  }
+function findWords(board: string[][], words: string[]): string[] {
+  // TODO
+  return [];
 }
 ```
 
@@ -7483,68 +7745,69 @@ class WordDictionary {
 <summary>Solution</summary>
 
 ```ts
-class TrieNode {
-  children = new Map<string, TrieNode>();
-  isWord = false;
-}
+type TrieNode = { next: Map<string, TrieNode>; word: string | null };
 
-class WordDictionary {
-  private root = new TrieNode();
-
-  addWord(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      let next = node.children.get(ch);
-      if (!next) {
-        next = new TrieNode();
-        node.children.set(ch, next);
+function findWords(board: string[][], words: string[]): string[] {
+  const root: TrieNode = { next: new Map(), word: null };
+  for (const w of words) {
+    let n = root;
+    for (const ch of w) {
+      let child = n.next.get(ch);
+      if (!child) {
+        child = { next: new Map(), word: null };
+        n.next.set(ch, child);
       }
-      node = next;
+      n = child;
     }
-    node.isWord = true;
+    n.word = w; // store the whole word at its end node
   }
 
-  search(word: string): boolean {
-    const dfs = (node: TrieNode, i: number): boolean => {
-      if (i === word.length) return node.isWord;
-      const ch = word[i];
-      if (ch === '.') {
-        // Wildcard: try every child.
-        for (const child of node.children.values()) {
-          if (dfs(child, i + 1)) return true;
-        }
-        return false;
-      }
-      const next = node.children.get(ch);
-      return next !== undefined && dfs(next, i + 1);
-    };
-    return dfs(this.root, 0);
+  const R = board.length;
+  const C = board[0]?.length ?? 0;
+  const found: string[] = [];
+
+  const dfs = (r: number, c: number, parent: TrieNode): void => {
+    const ch = board[r][c];
+    const node = parent.next.get(ch);
+    if (!node) return; // the path is no longer a prefix of any word
+    if (node.word !== null) {
+      found.push(node.word);
+      node.word = null; // report each word once
+    }
+    board[r][c] = '#'; // in use on the current path
+    for (const [nr, nc] of [[r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]]) {
+      if (nr >= 0 && nc >= 0 && nr < R && nc < C && board[nr][nc] !== '#') dfs(nr, nc, node);
+    }
+    board[r][c] = ch; // restore on the way back
+    if (node.next.size === 0 && node.word === null) parent.next.delete(ch); // prune a finished branch
+  };
+
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) dfs(r, c, root);
   }
+  return found;
 }
 ```
 
-**Why it works.** Store words in a trie. Regular characters follow a single child; a `.` branches into every child, so search becomes a DFS over the trie. `addWord` is O(L); `search` is O(L) without wildcards and up to O(26^d * L) in the worst case with d dots (bounded by the trie size). Scanning a list of all words and regex-matching each is O(N * L) per query. Trap: at the end of the pattern you must check `isWord`, not just that a node exists.
+**Why it works.** Pattern: trie + grid backtracking. Brute force runs Word Search once per word: O(W * m * n * 3^L), and words that share a prefix ("oath", "oat", "oak") re-walk the same board paths again and again. Insight: put all words in a trie and run one DFS per starting cell that walks the trie alongside the board. The trie remembers every prefix of every word, so a shared prefix is explored once, and a path stops as soon as it is not a prefix of any word. Store the word at its end node and clear it when found (no duplicates), and delete trie leaves that are exhausted so later searches skip them. Worst case O(m * n * 4 * 3^(L - 1)) for the longest word length L, usually far less thanks to pruning; O(total letters) space for the trie. Traps: duplicate results when a word is found from two paths; forgetting to restore the cell after the DFS.
 
-**Say it.** I store words in a trie; search walks it normally, and on a dot it tries every child recursively, returning true at the end only if the node marks a complete word.
+**Say it.** I put all the words in a trie and DFS from every cell while walking down the trie, so a path dies as soon as it is not a prefix of any word, and shared prefixes are explored once. I clear a word when found and prune empty trie branches.
 
-**Follow-up.** Q: How would you speed up searches like "....." on a huge dictionary? A: Also bucket words by length (a separate trie or list per length), so wildcard-heavy queries only explore words of the right length; cache frequent query results.
+**Follow-up.** Q: Why not just call Word Search for each word? A: That is O(W * m * n * 3^L): every word restarts the board search, even when words share prefixes. With the trie, all words are searched in one pass and pruning removes found branches, which matters when W is in the thousands.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-const d = new WordDictionary();
-d.addWord('bad');
-d.addWord('dad');
-d.addWord('mad');
-assert.equal(d.search('pad'), false);
-assert.equal(d.search('bad'), true);
-assert.equal(d.search('.ad'), true);
-assert.equal(d.search('b..'), true);
-assert.equal(d.search('b.'), false);
-assert.equal(d.search('...'), true);
-assert.equal(d.search('....'), false);
+const board = [['o', 'a', 'a', 'n'], ['e', 't', 'a', 'e'], ['i', 'h', 'k', 'r'], ['i', 'f', 'l', 'v']];
+const copy = board.map((row) => [...row]);
+assert.deepEqual(findWords(board, ['oath', 'pea', 'eat', 'rain']).sort(), ['eat', 'oath']);
+assert.deepEqual(board, copy); // board restored
+assert.deepEqual(findWords([['a', 'b'], ['c', 'd']], ['abcb']), []);
+assert.deepEqual(findWords([['a']], ['a']), ['a']);
+assert.deepEqual(findWords([['a', 'a']], ['aaa']), []); // a cell cannot be reused
+assert.deepEqual(findWords(board.map((row) => [...row]), ['oa', 'oaa', 'oaan']).sort(), ['oa', 'oaa', 'oaan']);
 ```
 
 </details>
@@ -7610,28 +7873,23 @@ assert.equal(singleNumber([0, 5, 5]), 0);
 ---
 
 <a id="algo-099"></a>
-### algo-099. Counting Bits
+### algo-099. Alien Dictionary
 
-*Bit manipulation + DP · Easy*
+*Graphs (topological sort) · Hard*
 
-Given an integer `n`, return an array `ans` of length `n + 1` where `ans[i]` is the number of `1` bits in the binary representation of `i`. Aim for O(n).
+An alien language uses lowercase English letters in an unknown order. You get a list of `words` already sorted in that language's dictionary order. Return a string of all letters that appear in `words`, in a valid order. If no order is consistent with the list, return `""`. If several orders are valid, return any.
 
-- `n = 2` -> `[0,1,1]`
-- `n = 5` -> `[0,1,1,2,1,2]`
-
-(Also write `hammingWeight(x)` that counts the 1 bits of a single non-negative integer.)
+- `["wrt","wrf","er","ett","rftt"]` -> `"wertf"`
+- `["z","x"]` -> `"zx"`
+- `["z","x","z"]` -> `""` (z < x and x < z)
+- `["abc","ab"]` -> `""` (a longer word cannot come before its own prefix)
 
 **Starter**
 
 ```ts
-function hammingWeight(x: number): number {
+function alienOrder(words: string[]): string {
   // TODO
-  return 0;
-}
-
-function countBits(n: number): number[] {
-  // TODO
-  return [];
+  return '';
 }
 ```
 
@@ -7639,43 +7897,79 @@ function countBits(n: number): number[] {
 <summary>Solution</summary>
 
 ```ts
-function hammingWeight(x: number): number {
-  let count = 0;
-  while (x !== 0) {
-    x &= x - 1; // clears the lowest set bit
-    count++;
+function alienOrder(words: string[]): string {
+  const adj = new Map<string, Set<string>>();
+  const indeg = new Map<string, number>();
+  for (const w of words) {
+    for (const ch of w) {
+      if (!adj.has(ch)) {
+        adj.set(ch, new Set());
+        indeg.set(ch, 0);
+      }
+    }
   }
-  return count;
-}
 
-function countBits(n: number): number[] {
-  const ans = new Array<number>(n + 1).fill(0);
-  for (let i = 1; i <= n; i++) {
-    // i >> 1 drops the last bit (already computed); add it back with i & 1.
-    ans[i] = ans[i >> 1] + (i & 1);
+  // Only the first differing letter of two neighbouring words gives an edge.
+  for (let i = 0; i + 1 < words.length; i++) {
+    const a = words[i];
+    const b = words[i + 1];
+    const len = Math.min(a.length, b.length);
+    let j = 0;
+    while (j < len && a[j] === b[j]) j++;
+    if (j === len) {
+      if (a.length > b.length) return ''; // "abc" before "ab" is impossible
+      continue;
+    }
+    const edges = adj.get(a[j])!;
+    if (!edges.has(b[j])) {
+      edges.add(b[j]); // a duplicate edge would inflate the in-degree
+      indeg.set(b[j], indeg.get(b[j])! + 1);
+    }
   }
-  return ans;
+
+  // Kahn's algorithm: repeatedly output a letter with no remaining predecessor.
+  const order = [...indeg].filter(([, d]) => d === 0).map(([ch]) => ch);
+  for (let h = 0; h < order.length; h++) {
+    for (const next of adj.get(order[h])!) {
+      const d = indeg.get(next)! - 1;
+      indeg.set(next, d);
+      if (d === 0) order.push(next);
+    }
+  }
+  return order.length === adj.size ? order.join('') : ''; // leftovers sit on a cycle
 }
 ```
 
-**Why it works.** For one number, `x & (x - 1)` removes the lowest set bit, so the loop runs once per 1 bit (Brian Kernighan's trick). Calling that for every `i` gives O(n log n) for `countBits`; the DP `ans[i] = ans[i >> 1] + (i & 1)` reuses the answer for `i` without its last bit, giving O(n) time and O(1) extra space besides the output. Trap: in JS, bitwise ops are 32-bit signed, so for values above 2^31 - 1 use `x >>> 0` or arithmetic division.
+**Why it works.** Pattern: build a graph from ordering constraints, then topological sort (Kahn). Two neighbouring words differ first at some position j, and that is the only thing they say: `a[j]` comes before `b[j]`. Later letters say nothing, and non-neighbouring pairs follow by transitivity. Brute force tries every permutation of the letters and checks whether the list is sorted under it: O(k! * total length). Instead, remember each constraint as an edge and keep in-degrees; Kahn's algorithm repeatedly outputs a letter with no unmet predecessor, and if some letters never reach in-degree 0 there is a cycle, so return "". O(C) to compare neighbours (C = total characters) plus O(V + E) for the sort, with V <= 26 and E <= 26^2. Traps: the prefix case ("abc" before "ab" is invalid); counting a repeated edge twice in the in-degree; forgetting letters that appear in no constraint (they still belong in the output).
 
-**Say it.** For a single number I clear the lowest set bit with x and x minus one until it's zero; for the whole range I use dp: bits of i equal bits of i shifted right by one plus its last bit. O(n) total.
+**Say it.** Each pair of neighbouring words gives at most one rule, from their first differing letter, so I build a graph of letter-before-letter edges and run Kahn's topological sort; if not every letter comes out, there is a cycle and I return an empty string. I also reject a word that comes before its own prefix.
 
-**Follow-up.** Q: Another O(n) recurrence? A: `ans[i] = ans[i & (i - 1)] + 1`: removing the lowest set bit gives a smaller number with exactly one fewer 1 bit.
+**Follow-up.** Q: How do you know whether the order is unique? A: Run Kahn's algorithm and check that the queue never holds more than one letter at a time; if two letters are available together, their relative order is not determined by the input.
 
 <details>
 <summary>Tests</summary>
 
 ```ts
 import assert from 'node:assert/strict';
-assert.deepEqual(countBits(2), [0, 1, 1]);
-assert.deepEqual(countBits(5), [0, 1, 1, 2, 1, 2]);
-assert.deepEqual(countBits(0), [0]);
-assert.equal(hammingWeight(11), 3);
-assert.equal(hammingWeight(128), 1);
-assert.equal(hammingWeight(2147483647), 31);
-assert.equal(countBits(1023)[1023], 10);
+// Valid if every letter appears exactly once and the words are sorted under that order.
+const isValid = (words: string[], order: string): boolean => {
+  const letters = new Set(words.join(''));
+  if (order.length !== letters.size || new Set(order).size !== order.length) return false;
+  if (![...letters].every((ch) => order.includes(ch))) return false;
+  const rank = new Map([...order].map((ch, i) => [ch, i] as [string, number]));
+  const cmp = (a: string, b: string): number => {
+    for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return rank.get(a[i])! - rank.get(b[i])!;
+    return a.length - b.length;
+  };
+  return words.every((w, i) => i === 0 || cmp(words[i - 1], w) <= 0);
+};
+assert.equal(alienOrder(['wrt', 'wrf', 'er', 'ett', 'rftt']), 'wertf');
+assert.equal(alienOrder(['z', 'x']), 'zx');
+assert.equal(alienOrder(['z', 'x', 'z']), '');
+assert.equal(alienOrder(['abc', 'ab']), '');
+assert.equal(alienOrder(['z', 'z']), 'z');
+const words = ['ab', 'adc', 'adcb', 'e'];
+assert.ok(isValid(words, alienOrder(words)));
 ```
 
 </details>
@@ -7749,7 +8043,7 @@ class LRUCache {
 }
 ```
 
-**Why it works.** A JavaScript `Map` remembers insertion order, so deleting and re-inserting a key moves it to the end (most recent), and `map.keys().next()` gives the least recently used key to evict. All operations are O(1) average time, O(capacity) space. In languages without an ordered hash map (or if the interviewer forbids relying on it), combine a hash map from key to node with a doubly linked list: move nodes to the head on access and evict from the tail. Trap: `put` on an existing key must refresh its recency, and must not evict when only updating.
+**Why it works.** A JavaScript `Map` remembers insertion order, so deleting and re-inserting a key moves it to the end (most recent), and `map.keys().next()` gives the least recently used key to evict. A list with timestamps finds the least recently used key by scanning everything (O(n) per eviction); the ordered Map remembers recency order, so the oldest key is always first. All operations are O(1) average time, O(capacity) space. In languages without an ordered hash map (or if the interviewer forbids relying on it), combine a hash map from key to node with a doubly linked list: move nodes to the head on access and evict from the tail. Trap: `put` on an existing key must refresh its recency, and must not evict when only updating.
 
 **Say it.** I use a Map because it keeps insertion order: on every get or put I delete and re-insert the key so it becomes most recent, and when over capacity I evict the first key. Everything is O(1).
 

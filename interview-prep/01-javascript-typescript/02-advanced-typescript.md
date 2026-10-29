@@ -277,7 +277,7 @@ Drills: [ts-16](../practice/live-coding/01-typescript.md#ts-16), [ts-49](../prac
 - `readonly T[]` (same as `ReadonlyArray<T>`) has no mutating methods (`push`, `sort`, `splice`). A mutable array is assignable to it, but not the other way round, so accept `readonly T[]` in parameters you don't mutate. Common surprise: an `as const` tuple is rejected by a `number[]` parameter.
 - `readonly` is compile-time only. `Object.freeze` is the runtime counterpart (shallow).
 - A **tuple** is an array with a fixed length and a type per position: `[string, number]`. Elements can be labeled (`[get: () => T, set: (v: T) => void]`), which documents a `useState`-like return value. `T['length']` is a literal (`2`).
-- **Variadic tuple types** spread tuples inside tuples: `[...A, ...B]`. With `A extends unknown[]` you can capture a function's whole parameter list and reuse it, which is how you type wrappers (`debounce`, `memoize`, `once`) and partial application:
+- **Variadic tuple types** spread tuples inside tuples: `[...A, ...B]`. With `A extends unknown[]` you can capture a function's whole parameter list and reuse it, which is how you type wrappers (`debounce`, `memoize`, `once`), partial application and currying:
 
 ```ts
 type Head<T extends readonly unknown[]> = T extends readonly [infer H, ...unknown[]] ? H : undefined;
@@ -286,6 +286,8 @@ function myBind<T, A extends unknown[], B extends unknown[], R>(
   fn: (this: T, ...args: [...A, ...B]) => R, thisArg: T, ...bound: A
 ): (...args: B) => R;                         // returned function takes only the remaining params
 ```
+
+A typed `curry` uses the same tuples recursively: each call accepts any non-empty prefix of the remaining parameters, the type drops that prefix from the tuple and recurses, and returns `R` once the tuple is empty.
 
 Drills: [ts-22](../practice/live-coding/01-typescript.md#ts-22), [ts-31](../practice/live-coding/01-typescript.md#ts-31), [ts-47](../practice/live-coding/01-typescript.md#ts-47).
 
@@ -297,6 +299,7 @@ Drills: [ts-22](../practice/live-coding/01-typescript.md#ts-22), [ts-31](../prac
 - `Record<'math' | 'english', number>` with a literal key union **requires** every key. `Partial<Record<K, V>>` is the honest type when only some keys will be present (e.g. the result of `groupBy`).
 - A plain object inherits keys like `toString` and `constructor`, so `key in obj` lies for user-provided keys. Use `Object.hasOwn(obj, key)`, an `Object.create(null)` object, or a `Map`.
 - Prefer a `Map` when keys are dynamic or user-provided, when you add and remove often, or when keys aren't strings: no inherited keys, insertion order, `.size`.
+- A store where **each key has its own value type** takes a schema type and generic methods: `get<K extends keyof S>(key: K): S[K] | undefined`, `set<K extends keyof S>(key: K, value: S[K])`. The backing `Map<keyof S, S[keyof S]>` can't express the per-key link, so one cast lives inside `get`, guarded by the typed `set`.
 
 Drill: [ts-21](../practice/live-coding/01-typescript.md#ts-21).
 
@@ -366,6 +369,7 @@ type Params<P extends string> =
   P extends `${string}:${infer Param}/${infer Rest}` ? Param | Params<Rest>
   : P extends `${string}:${infer Param}` ? Param : never;
 type X = Params<'/users/:userId/orders/:orderId'>; // 'userId' | 'orderId'
+type RouteParams<P extends string> = { [K in Params<P>]: string }; // { userId: string; orderId: string }
 
 // all dot-paths: map each key to its paths, then index with [keyof T & string] to collect them into one union
 type Paths<T> = T extends object
@@ -373,7 +377,7 @@ type Paths<T> = T extends object
   : never;   // Paths<{ a: { b: number }; c: string }> = 'a' | 'a.b' | 'c'
 ```
 
-Form libraries (`register('address.city')`), i18n keys and config getters use this for autocomplete. TS can't follow runtime string building (`replace`, concatenation), so the runtime helper needs one cast to the computed type. Drills: [ts-25](../practice/live-coding/01-typescript.md#ts-25), [ts-26](../practice/live-coding/01-typescript.md#ts-26).
+Form libraries (`register('address.city')`), i18n keys and config getters use `Paths` for autocomplete; routers use `RouteParams` to type a handler's `params` from the route string. TS can't follow runtime string building (`replace`, concatenation, a loop that matches segments), so the runtime helper needs one cast to the computed type. Drills: [ts-25](../practice/live-coding/01-typescript.md#ts-25), [ts-26](../practice/live-coding/01-typescript.md#ts-26).
 
 ### Recursive types
 

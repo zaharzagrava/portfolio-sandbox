@@ -103,6 +103,7 @@ producer ─────────────► SNS topic "order-events"    
 - **At-least-once**: ack after processing, so a crash causes **redelivery** and duplicates. ← the realistic default.
 - **Exactly-once**: impossible end-to-end in general (two generals problem). What you can build is **effectively-once processing** = at-least-once delivery + **idempotent consumers**.
 - Kafka "exactly-once semantics" (idempotent producer + transactions) applies **within Kafka** (read → process → write to Kafka atomically with offset commits). Side effects outside Kafka (DB writes, emails, HTTP) still need idempotency.
+- **Exactly-once effect into your own DB: store the position in the DB.** Every record has a position: Kafka **offset** (per partition, contiguous integers), Kinesis **sequence number** (per shard, increasing but not contiguous). Consume a batch, write its effects **and** `UPDATE consumer_positions SET pos = <last> WHERE partition = …` in one DB transaction; on start, read the stored position and `seek` past it (don't rely on Kafka's own committed offset). A redelivered batch is at or below the stored position and is skipped. This is why logs suit batch consumers: one poll returns hundreds of records, one transaction applies them, one position covers them all. (SQS also receives up to 10 per call but has no position to store; use a processed-message-id table instead.)
 
 Duplicates can enter a system at **two different points**, and each needs its own protection:
 ```
@@ -656,6 +657,28 @@ What you give up compared with Kafka:
 | Stream processing (joins, windows) | Kafka Streams, Flink | not built in |
 | Cost at very high volume | cheap per message | per-request pricing grows linearly |
 Rule of thumb: few consumers, replay rare, moderate volume → SNS + SQS (+ archive). Many consumers joining over time, replay as a routine tool, stream processing or 100k+ msg/s → Kafka.
+
+### Use cases and costs side by side (AWS, us-east-1, list prices checked Oct 2026; verify before quoting)
+
+| Service | What it is | Best for | Not for | Pricing model | List price | What drives the bill |
+|---|---|---|---|---|---|---|
+| **SQS** Standard / FIFO | queue: each message handled by one consumer, then deleted | background jobs, decoupling services, work queues with retries + DLQ; FIFO for per-group order | replay, many independent consumers (add SNS fan-out), billions of tiny events | per **request** (each 64 KB = 1) | $0.40 / $0.50 per 1M; 1M/month free | each message ≈ send + receive + delete = **3 requests**; batch 10 per call |
+| **Kinesis Data Streams** | log/stream: records kept 24 h–365 d, ordered per shard, many consumers, replay | high-volume event streams on AWS (clicks, telemetry, CDC) read by several consumers | per-message retries/DLQ, long-running job processing | on-demand: stream-hour + GB; provisioned: shard-hour + PUT units | on-demand $0.04/h, $0.08/GB in, $0.04/GB out; provisioned $0.015/shard-h, $0.014 per 1M PUT units (25 KB) | data volume (on-demand) or shard count (each ~1,000 records/s, 1 MB/s in) |
+| **Firehose** | delivery pipe: buffers records and writes batch files | getting events into S3 / Redshift / Snowflake / OpenSearch with zero consumer code | being read by your code (no consumers), per-record processing | per GB in | $0.029/GB (first 500 TB) | **each record rounded up to 5 KB**: pack many events per record |
+| **MSK** (managed Kafka) provisioned | log, like Kinesis, open-source API | Kafka ecosystem (Connect, Streams, Debezium), very high throughput, long retention, multi-cloud | small/occasional workloads (fixed floor) | broker-hour + storage | ≈ $0.20/broker-h (m7g.large), $0.10/GB-month | 3+ brokers 24/7: ≈ $450+/month floor |
+| **MSK Serverless** | Kafka without sizing brokers | Kafka API at moderate, spiky volume | the cheapest option for tiny volume | cluster-hour + partition-hour + GB | ≈ $0.75/h (≈ $550/month base), $0.0015/partition-h, $0.10/GB in | the fixed cluster-hour |
+| **Amazon MQ** (RabbitMQ) | classic broker: routing (exchanges, topics), acks, priorities | complex routing, AMQP/MQTT clients, lifting an existing RabbitMQ app | huge throughput, replay | broker-hour + EBS | mq.m5.large ≈ $0.29/h per node; 3-node ≈ $700/month | always-on instances |
+| **Postgres as a queue** (outbox / jobs table + `SKIP LOCKED`) | rows you claim and update | jobs that must commit atomically with business data, moderate volume | very high volume, fan-out to many teams | your existing DB | $0 extra | DB load (vacuum, locks) |
+
+**Shape of the costs:**
+- **Per-request services** (SQS, Lambda triggers) are almost free at low volume and expensive for billions of tiny messages.
+- **Per-capacity services** (MSK, Amazon MQ, provisioned Kinesis) have a fixed monthly floor, then are cheap per extra message.
+
+Example: 10B click events/month:
+- **SQS, one message per click:** ≈ 30B requests ≈ **$12,000/month**.
+- **SQS, batched by 10:** ≈ $1,200/month.
+- **After in-process pre-aggregation:** a few dollars.
+- **Firehose:** one 150 B event per record bills 10B × 5 KB = 50 TB ≈ **$1,450**. The same data packed into ~1 MB records is 1.5 TB ≈ **$44**.
 
 ### Choosing: the decision in order
 1. **Command or fact?** A fact many services react to (`PaymentCompleted`) → **Kafka** (or SNS → SQS). A command one handler executes ("charge payment 9") → a queue: steps 2–4.

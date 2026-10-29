@@ -88,7 +88,7 @@ Subtle points:
 
 - Make cursors **opaque** (base64-encoded JSON, ideally signed/HMAC'd so clients can't tamper with or depend on the internals).
 - Sort must be **deterministic**: always add a unique tiebreaker (`ORDER BY created_at DESC, id DESC`).
-- Response shape: `{ data: [...], nextCursor: "...", hasMore: true }`. Avoid `totalCount` on huge tables or make it approximate.
+- Response shape: `{ data: [...], nextCursor: "...", hasMore: true }`. Avoid `totalCount` on huge tables or make it approximate. Fetch `limit + 1` rows to know whether there's a next page without a count query. Drill: [node-38](../practice/live-coding/02-nodejs.md#node-38).
 - Client side, hide the cursor loop behind an async generator so callers just `for await` over items: [async generators](../01-javascript-typescript/04-fetch-axios-async.md#10-async-generators-and-for-await).
 - For syncing ("give me everything changed since X"), use an `updated_since` cursor with care: clock skew and long-running transactions can commit rows with older timestamps **after** you've read past them. Use an overlap window or a monotonic sequence (a change log table with a bigserial).
 
@@ -173,6 +173,8 @@ RateLimit: "default";r=0;t=12
 ### Where to enforce it
 - Edge (Cloudflare, API Gateway, ingress) for coarse IP limits and DDoS protection.
 - In the app with Redis for per-tenant or business limits (`@nestjs/throttler` with a Redis storage backend; the default in-memory store is per pod and wrong with multiple replicas).
+- **One place decides.** The gateway (or one middleware) makes the allow/deny call; backend services don't count again. Two counters disagree.
+- **Enforcement ≠ billing.** The limiter may be approximate (±5%, fail-open during a Redis failover); what you **bill** must be exact, so it comes from usage events of allowed requests, not from the limiter's Redis counters ([Redis §7](../03-databases/04-redis-and-caching.md#7-rate-limiting-in-redis)).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase

@@ -112,9 +112,17 @@ CREATE TABLE events (id bigint, tenant_id int, created_at timestamptz NOT NULL, 
 PARTITION BY RANGE (created_at);
 CREATE TABLE events_2026_10 PARTITION OF events FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
 ```
+How it works:
+- The `PARTITION BY` table (`events`) is a **parent that stores no rows**. It defines the columns and the routing rule. `RANGE (created_at)` means each child owns a range of `created_at` values (`FROM` inclusive, `TO` exclusive); `LIST` = explicit values; `HASH` = `hash % N`.
+- `CREATE TABLE child PARTITION OF parent FOR VALUES …` creates a **real table** attached to the parent for that range.
+- `INSERT INTO events` → Postgres routes each row to the child whose range contains it. No matching child → the insert **fails** (unless a `DEFAULT` partition exists), so create partitions **ahead of time**.
+- `SELECT … FROM events WHERE created_at > …` → reads only the matching children (**partition pruning**). Without a filter on the partition key, it reads all of them.
+- `DETACH PARTITION child` unhooks a child: it becomes a normal standalone table, invisible through the parent. Then `DROP` it, or archive it. `DETACH … CONCURRENTLY` (PG14+) avoids holding a strong lock on the parent while running; it can't run inside a transaction block. Plain `DROP TABLE child` also works but locks the parent briefly.
+
 Benefits:
 - **Partition pruning**: queries filtering on `created_at` touch only the relevant partitions.
-- **Retention**: `DROP TABLE events_2025_01` (or `DETACH ... CONCURRENTLY`) instead of a massive `DELETE` that bloats the table.
+- **Retention**: `DROP TABLE events_2025_01` (or `DETACH ... CONCURRENTLY`) instead of a massive `DELETE` that bloats the table. `DROP` deletes the partition's files; `DELETE` marks every row dead one by one, writes them all to WAL, and leaves bloat for vacuum.
+- **Rotation job** (daily): create the next partitions ahead; roll the oldest one up into a summary table if you need it (`INSERT … SELECT … GROUP BY`); detach and drop it. Run it with **pg_cron** (extension that runs SQL on a schedule inside Postgres, e.g. `SELECT cron.schedule('rotate', '15 0 * * *', $$CALL rotate_partitions()$$)`, where the procedure builds the dated table names with `format()` + `EXECUTE`), from an app-side scheduler, or let **pg_partman** create and drop partitions from a config (`premake`, retention); any roll-up before dropping stays your job. Both extensions are available on RDS/Aurora.
 - Smaller indexes per partition, and vacuum works per partition.
 
 Costs: primary and unique keys must include the partition key; you have to automate partition creation (`pg_partman`); and **too many partitions** (thousands) backfire:
@@ -128,6 +136,100 @@ Costs: primary and unique keys must include the partition key; you have to autom
 Rules of thumb: tens to low hundreds of partitions; partition by **time** (retention) or by a key nearly every query filters on. **Per-customer partitions are an anti-pattern**: use a `tenant_id` column + composite indexes leading with it, or `PARTITION BY HASH (tenant_id)` into a fixed small number (e.g. 16).
 
 Rule of thumb: consider it once a table goes past roughly 100 GB, or when you have a clear time-based retention requirement.
+
+### Worked example: rolling per-day partitions (click counts, URL shortener)
+Three time units, don't mix them up: the **row** counts one minute bucket (`minute` = `date_trunc('minute', ts)`); each **partition** holds one day of those rows (for cheap deletion); `click_rollups_daily` keeps per-day totals forever. Tested on Postgres 16/17 (PGlite).
+
+```sql
+-- ============ 1. Tables ============
+
+-- Live per-minute counts. Parent table: stores no rows itself, routes them to per-day children.
+CREATE TABLE click_rollups_minute (
+  code     text        NOT NULL,
+  minute   timestamptz NOT NULL           -- start of the minute bucket, e.g. 10:01:00
+           CHECK (minute = date_trunc('minute', minute)),   -- reject 10:01:12 at write time
+  country  char(2)     NOT NULL,
+  device   text        NOT NULL,          -- mobile | desktop | tablet | other
+  clicks   bigint      NOT NULL CHECK (clicks >= 0),
+  PRIMARY KEY (code, minute, country, device)   -- must contain the partition key (minute)
+) PARTITION BY RANGE (minute);
+
+-- Long-term per-day totals. Small enough to keep forever.
+CREATE TABLE click_rollups_daily (
+  code     text    NOT NULL,
+  day      date    NOT NULL,
+  country  char(2) NOT NULL,
+  device   text    NOT NULL,
+  clicks   bigint  NOT NULL,
+  PRIMARY KEY (code, day, country, device)
+);
+
+-- Where the stream consumer stopped, per Kinesis shard (exactly-once effect).
+CREATE TABLE stream_checkpoints (
+  shard_id  text PRIMARY KEY,
+  last_seq  numeric NOT NULL             -- Kinesis sequence numbers are big integers
+);
+
+-- ============ 2. Partition maintenance ============
+
+-- Create the child table for one day, if it doesn't exist yet.
+CREATE OR REPLACE FUNCTION create_minute_partition(d date) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  EXECUTE format(
+    'CREATE TABLE IF NOT EXISTS %I PARTITION OF click_rollups_minute FOR VALUES FROM (%L) TO (%L)',
+    'click_rollups_minute_' || to_char(d, 'YYYY_MM_DD'),
+    d::timestamptz, (d + 1)::timestamptz);
+END $$;
+
+-- Daily job: create the next 7 days, roll up and drop days older than 3 days.
+CREATE OR REPLACE FUNCTION rotate_click_partitions(today date DEFAULT current_date) RETURNS void
+LANGUAGE plpgsql AS $$
+DECLARE
+  d    date;
+  part text;
+BEGIN
+  -- 1. create ahead: inserts fail if no partition covers the row
+  FOR i IN 0..7 LOOP
+    PERFORM create_minute_partition(today + i);
+  END LOOP;
+
+  -- 2. every partition older than the 3-day window: roll up, then drop
+  FOR part, d IN
+    SELECT c.relname, to_date(right(c.relname, 10), 'YYYY_MM_DD')
+    FROM pg_inherits i
+    JOIN pg_class c ON c.oid = i.inhrelid
+    WHERE i.inhparent = 'click_rollups_minute'::regclass
+      AND to_date(right(c.relname, 10), 'YYYY_MM_DD') < today - 3
+  LOOP
+    EXECUTE format(
+      'INSERT INTO click_rollups_daily (code, day, country, device, clicks)
+       SELECT code, %L::date, country, device, sum(clicks) FROM %I GROUP BY code, country, device
+       ON CONFLICT (code, day, country, device) DO UPDATE SET clicks = EXCLUDED.clicks',
+      d, part);
+    EXECUTE format('ALTER TABLE click_rollups_minute DETACH PARTITION %I', part);
+    EXECUTE format('DROP TABLE %I', part);
+  END LOOP;
+END $$;
+```
+
+Writing (the stream consumer, one transaction per batch: upserts + checkpoint, so a redelivered batch is skipped):
+```sql
+INSERT INTO click_rollups_minute (code, minute, country, device, clicks)
+VALUES ('aB3x9Kq', date_trunc('minute', '2026-10-24T10:01:12Z'::timestamptz), 'PL', 'mobile', 350)
+ON CONFLICT (code, minute, country, device)
+DO UPDATE SET clicks = click_rollups_minute.clicks + EXCLUDED.clicks;   -- lands in click_rollups_minute_2026_10_24
+```
+
+Schedule: `SELECT cron.schedule('rotate-clicks', '15 0 * * *', $$SELECT rotate_click_partitions()$$);` (pg_cron).
+
+**Why partitions aren't created automatically:** Postgres routes an insert only to a partition that **already exists**; it never creates one on the fly. A row with no matching partition fails (`no partition of relation … found for row`). A `DEFAULT` partition would catch it, but then rows pile up there, and attaching the proper partition later means Postgres must scan the default for overlapping rows and you must move them yourself. So: create partitions **ahead** (here 7 days) with a job or pg_partman, and alert if the job stops.
+
+Details:
+- **Minute precision**: Postgres has no "minute" type. `timestamptz` + a `CHECK (minute = date_trunc('minute', minute))` rejects a non-truncated value at write time, so a bug can't silently create a second row for the same minute. Alternative: `bigint` epoch minutes (`CHECK (minute_epoch % 60 = 0)` if in seconds): compact, but you lose readable SQL and date functions.
+- Run the DB/session in UTC: `d::timestamptz` uses the session time zone for the day boundaries.
+- Roll-up uses `SET clicks = EXCLUDED.clicks` (overwrite, not add), so re-running the job after a crash gives the same totals.
+- `DETACH … CONCURRENTLY` can't run inside a function/transaction; the function uses plain `DETACH` (brief lock on the parent). For zero blocking, run `DETACH … CONCURRENTLY` and `DROP` as separate statements from the scheduler.
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
